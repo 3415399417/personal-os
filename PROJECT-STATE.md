@@ -21,6 +21,25 @@
 5. 禁止"开发中"占位页；Tailwind 只许用于布局工具类（当前未用）
 6. 完成后停下汇报，不要擅自加数据库/AI 之外的功能
 
+### 1.5 样式治理规范（2026-08-23 定稿，防特异性军备竞赛）
+
+背景：pages.css 已 2689 行，`[data-od-id="card-x"]` 专属覆盖 69 处（历史像素级对齐债）。新模块（进度感知/文档孵化/引导条）已全部使用通用类，无新增专属覆盖——继续保持。
+
+**新代码规范（必须遵守）：**
+- 新模块/新组件的样式一律写**通用类**（如 `.prog-dot` `.task-expand` `.sense-guide` `.incubate-*`），**禁止新增 `[data-od-id="card-x"]` 专属覆盖**（除非必须盖 prototype 且无公共类可用，此时注释说明原因）
+- 新样式写完后自查：`Select-String -Path app/pages.css -Pattern 'data-od-id'` 不应出现新增条目
+
+**按需收敛（不做大重构）：**
+- card-notes（13 覆盖）、card-life（11 覆盖）最多，这两张卡**下次改版时**顺手合并公共类，不单独为收敛而动
+
+**审计阈值（触发收敛的信号）：**
+- pages.css 总行数 > 3500 行，或单卡 data-od-id 覆盖 > 15 个，或总覆盖数 > 90 个 → 跑 `_verify/audit-pages-css.mjs` 复查并安排收敛
+- 日常检查：`node _verify/audit-pages-css.mjs`
+
+### 1.6 开发/构建纪律（2026-08-23 补）
+
+- 🔴 **dev server 运行时禁止 `npm run build`**：build 会重建 .next 目录破坏 dev 缓存 → CSS chunk 404、样式全丢。必须：停 dev → build → 再起 dev
+
 ## 2. 关键文件
 
 | 文件 | 职责 |

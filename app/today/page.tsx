@@ -230,9 +230,11 @@ export default function TodayPage() {
             已完成 {doneTotal}/{total} · {totalPercent}%
           </b>
         </div>
-        <div className="progress">
-          <i style={{ width: `${totalPercent}%` }} />
-        </div>
+        {total > 0 && (
+          <div className="progress">
+            <i style={{ width: `${totalPercent}%` }} />
+          </div>
+        )}
         {planStats && (
           <div className="plan-vs-actual">
             <span>今日新计划 <b>{planStats.createdToday}</b> 项</span>
@@ -306,10 +308,12 @@ export default function TodayPage() {
                 {st.done}/{st.total}
               </span>
             </div>
-            {/* 小组进度条 */}
-            <div className="progress" style={{ margin: "2px 0 8px" }}>
-              <i style={{ width: `${st.percent}%` }} />
-            </div>
+            {/* 小组进度条（空分组不渲染，避免空轨道被误读为满格） */}
+            {st.total > 0 && (
+              <div className="progress" style={{ margin: "2px 0 8px" }}>
+                <i style={{ width: `${st.percent}%` }} />
+              </div>
+            )}
             <ul className="task-list">
               {tasks
                 .filter((t) => t.group === g.key)

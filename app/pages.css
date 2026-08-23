@@ -2673,17 +2673,82 @@ li:hover > .task-focus { opacity: 1; }
   background: #FEF3C7; border: 1px solid #FDE68A;
   border-radius: var(--radius-pill); padding: 1px 7px; line-height: 1.6;
 }
-/* ── 最近沉淀：类型标签 + 今日高亮 ── */
-[data-od-id="card-notes"] .note-item .note-meta-row {
+/* ── 最近沉淀：类型标签 + 今日高亮（通用类，首页/详情页 note-item 共用） ── */
+.note-item .note-meta-row {
   display: inline-flex; align-items: center; gap: 6px;
 }
-[data-od-id="card-notes"] .note-item .note-type-tag {
+.note-item .note-type-tag {
   font-size: 9px; padding: 0 6px; flex: none;
   color: var(--accent-deep); background: var(--accent-tint); border-color: var(--border);
   font-family: var(--font);
 }
-[data-od-id="card-notes"] .note-item .note-item-time { font-size: 10.5px; }
-[data-od-id="card-notes"] .note-item.note-today b { color: var(--accent-deep); }
-[data-od-id="card-notes"] .note-item.note-today .note-type-tag {
+.note-item .note-item-time { font-size: 10.5px; }
+.note-item.note-today b { color: var(--accent-deep); }
+.note-item.note-today .note-type-tag {
   background: var(--accent-tint); border-color: var(--accent-light); color: var(--accent-deep); font-weight: 700;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   暗色模式对比度修正（2026-08-23 视觉评审）
+   根因：① 大量卡片主文字写死 #111，在暗底 --surface 上几乎不可见；
+        ② 标签/链接/小标题用 var(--accent-deep)（暗紫），暗底上对比不足；
+        ③ --white 在暗色被改近黑，主按钮文字发暗。
+   仅用 prototype.css 已有的暗色 token 修正，不引入新颜色、不改 prototype.css。
+   ═════════════════════════════════════════════════════════════ */
+/* A. 主条目文字：#111 → 亮字 */
+[data-theme="dark"] [data-od-id="card-projects"] .proj-name-text b,
+[data-theme="dark"] [data-od-id="card-study"] .proj-name-text b,
+[data-theme="dark"] [data-od-id="card-notes"] .note-item b,
+[data-theme="dark"] [data-od-id="card-life"] .life-item b,
+[data-theme="dark"] [data-od-id="card-assets"] .asset-item b,
+[data-theme="dark"] .quick-item,
+[data-theme="dark"] .ai-tag,
+[data-theme="dark"] .exec-cats li,
+[data-theme="dark"] .start-greet,
+[data-theme="dark"] .start-item-text {
+  color: var(--fg);
+}
+/* B. 标签/链接/小标题/按钮：暗紫(var(--accent-deep)) → 亮紫(var(--accent)) */
+[data-theme="dark"] .tag,
+[data-theme="dark"] .link-more,
+[data-theme="dark"] .start-col-title,
+[data-theme="dark"] .card-eyebrow,
+[data-theme="dark"] .progress-meta b,
+[data-theme="dark"] .exec-count,
+[data-theme="dark"] .proj-line span,
+[data-theme="dark"] [data-od-id="card-notes"] .note-item .note-type-tag,
+[data-theme="dark"] .note-item.note-today b,
+[data-theme="dark"] .note-item.note-today .note-type-tag,
+[data-theme="dark"] .btn-add,
+[data-theme="dark"] .btn-soft,
+[data-theme="dark"] .icon-btn,
+[data-theme="dark"] .nav-link.active,
+[data-theme="dark"] .bell-pop-head button,
+[data-theme="dark"] .sf-num {
+  color: var(--accent);
+}
+/* C. 今日启动卡：白底渐变 → 暗面；子列 → 暗面 */
+[data-theme="dark"] .start-card {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-deep) 55%, var(--border) 100%);
+  border-color: var(--accent-light);
+}
+[data-theme="dark"] .start-col {
+  background: var(--surface-deep);
+  border-color: var(--border);
+}
+/* D. 资源中心单元格：白底/#111 → 暗面/亮字 */
+[data-theme="dark"] .res-row-cell {
+  background: var(--surface-deep);
+  color: var(--fg);
+  border-color: var(--border);
+}
+[data-theme="dark"] .res-row-cell:hover {
+  background: var(--accent-tint);
+  border-color: var(--accent-light);
+}
+[data-theme="dark"] .res-row-cell:nth-child(7) {
+  background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .res-row-cell .num { color: var(--muted); }
+/* E. 主按钮文字：--white 在暗色为近黑，改回纯白（唯一引入的字面白，因 --white 已被复用为暗面） */
+[data-theme="dark"] .btn-primary { color: #fff; }

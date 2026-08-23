@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { useReminderNotifications } from "@/hooks/useReminderNotifications";
 import { useAutoReport } from "@/hooks/useAutoReport";
+import { useAutoBackup } from "@/hooks/useAutoBackup";
 
 /** 应用外壳：div.app = Sidebar(260px) + .main(Topbar + .content)，结构照搬原型 */
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   useAutoReport((title) => {
     setToast(`✅ ${title}已自动生成，见「复盘」页`);
+    window.setTimeout(() => setToast(null), 5000);
+  });
+  useAutoBackup((file) => {
+    setToast(`💾 今日数据已自动备份（${file}）`);
     window.setTimeout(() => setToast(null), 5000);
   });
   const [drawerOpen, setDrawerOpen] = useState(false);

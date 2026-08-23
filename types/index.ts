@@ -28,6 +28,7 @@ export interface Task {
   status?: string; // todo | doing | waiting | completed（运行时状态，感知引擎更新）
   artifacts?: TaskArtifact[];
   readyForConfirm?: boolean;
+  stalled?: { days: number }; // 长时间无动静（进度感知：>5 天无产物事件）
 }
 
 export interface ProgressEventItem {

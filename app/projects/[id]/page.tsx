@@ -538,6 +538,24 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* 感知引导：未关联文件夹时提示开启进度感知 */}
+          {!project.folderPath && project.tasks.length > 0 && (
+            <div className="sense-guide" role="note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+                <path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9.5V18A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z" />
+              </svg>
+              <span className="sense-guide-text">设置项目文件夹后，系统将自动检测开发进度（任务状态点、完成依据）</span>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ height: 24, fontSize: 11, padding: "0 10px" }}
+                onClick={startEditPath}
+              >
+                设置路径
+              </button>
+            </div>
+          )}
+
           {adding && (
             <div className="field" style={{ marginBottom: 10 }}>
               <input
@@ -615,6 +633,11 @@ export default function ProjectDetailPage() {
                             className={`prog-dot ${dotClass(t)}`}
                             title={t.readyForConfirm ? "预期产物已就位，待确认完成" : t.status === "doing" ? "开发中" : t.done ? "已完成" : "待开始"}
                           />
+                        )}
+                        {t.stalled && (
+                          <span className="task-stalled" title="该任务长时间没有产物更新，可能已阻塞">
+                            ⚠ {t.stalled.days}天无动静
+                          </span>
                         )}
                       </span>
                     </span>

@@ -541,12 +541,37 @@ export async function getProject(id: string): Promise<Project | null> {
     prisma.note.findMany({ where: { projectId: id } }),
     prisma.progressEvent.findFirst({ where: { projectId: id }, orderBy: { createdAt: "desc" } }),
   ]);
-  return {
+  const out = {
     ...toProject({ ...p, progress: calcProgress(tasks) }),
     tasks: tasks.map(toTask),
     noteIds: notes.map((n) => n.id),
     recentActivity: recentEv ? { detail: recentEv.detail, time: formatTime(recentEv.createdAt) } : undefined,
   };
+  // 卡住提醒：未完成 + 有产物 + 最近动静（最新事件/创建时间）超过 STALLED_DAYS → stalled
+  if (p.folderPath) {
+    const unfinished = tasks.filter((t) => t.status !== "completed" && parseArtifactsJson(t.artifacts).length > 0);
+    if (unfinished.length > 0) {
+      const evRows = await prisma.progressEvent.findMany({
+        where: { taskId: { in: unfinished.map((t) => t.id) } },
+        orderBy: { createdAt: "desc" },
+        select: { taskId: true, createdAt: true },
+      });
+      const lastByTask = new Map<string, Date>();
+      for (const e of evRows) {
+        if (!lastByTask.has(e.taskId)) lastByTask.set(e.taskId, e.createdAt);
+      }
+      const now = Date.now();
+      for (const t of unfinished) {
+        const last = lastByTask.get(t.id) ?? t.createdAt;
+        const days = Math.floor((now - last.getTime()) / 86400000);
+        if (days >= STALLED_DAYS) {
+          const task = out.tasks.find((x) => x.id === t.id);
+          if (task) task.stalled = { days };
+        }
+      }
+    }
+  }
+  return out;
 }
 
 export async function createProject(input: { name: string; desc?: string; status?: string; folderPath?: string }): Promise<Project> {
@@ -1025,6 +1050,7 @@ export async function getPlanStats() {
 
 const ARTIFACT_TYPES = ["file", "folder", "glob"];
 const EVENT_MAX_PER_TASK = 50;
+const STALLED_DAYS = 5; // 卡住判定：未完成 + 有产物 + 最近动静超过 N 天
 
 /** 解析任务 artifacts JSON 字段（容错：坏 JSON / 非数组 / 坏条目一律丢弃） */
 export function parseArtifactsJson(json: string | null | undefined): Artifact[] {

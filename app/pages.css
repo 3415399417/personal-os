@@ -2752,3 +2752,13 @@ li:hover > .task-focus { opacity: 1; }
 [data-theme="dark"] .res-row-cell .num { color: var(--muted); }
 /* E. 主按钮文字：--white 在暗色为近黑，改回纯白（唯一引入的字面白，因 --white 已被复用为暗面） */
 [data-theme="dark"] .btn-primary { color: #fff; }
+/* ── 暗色模式：Hero 焦点卡适配（与上方对比度修正同源：写死 #111 文字 + 白底胶囊） ── */
+[data-theme="dark"] .focus-block-text { color: var(--fg); }
+[data-theme="dark"] .focus-block-label,
+[data-theme="dark"] .focus-next-text,
+[data-theme="dark"] .focus-state-pill { color: var(--accent); }
+[data-theme="dark"] .focus-meta-pill {
+  background: var(--surface-deep);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}

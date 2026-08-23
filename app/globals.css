@@ -1,0 +1,3 @@
+/* 视觉样式唯一来源：./prototype.css（从 personal-os-home.html <style> 原样提取，一字未改）。
+   注意：此处刻意不引入 Tailwind preflight，避免其重置 input/button 等浏览器默认样式，
+   与原型渲染产生偏差。布局如需工具类，请直接用原型类名或内联样式。 */

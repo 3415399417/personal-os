@@ -1,0 +1,163 @@
+// BetterLife Personal OS — 数据模型（按规格书 §8 核心数据模型）
+// SQLite + Prisma；字段命名与规格书一致（snake_case）
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ── 项目 ──
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  status      String   @default("active") // active | paused | completed | archived
+  progress    Int      @default(0) // 冗余字段：= 完成任务数/总任务数，写操作时同步更新
+  priority    Int      @default(3) // 1 最高 → 5 最低
+  folderPath  String   @default("") // 项目所在文件夹路径（本地磁盘，可点击打开）
+  isTodayFocus Boolean @default(false) // 今日焦点（与任务焦点互斥，全局唯一）
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       Task[]
+  notes       Note[]
+  resources   Resource[]
+  assets      Asset[]
+  conversations AiConversation[]
+}
+
+// ── 任务 ──
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  status      String    @default("todo") // todo | doing | waiting | completed
+  group       String    @default("must") // 分组（创建时确定，完成不移组）：must | doing | waiting | done
+  priority    Int       @default(3)
+  projectId   String?
+  isTodayFocus Boolean  @default(false)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  artifacts   String    @default("[]") // JSON：[{type: file|folder|glob, path|pattern}]，进度感知用
+  readyForConfirm Boolean @default(false) // 全部预期产物已就位，等用户确认完成
+
+  project       Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  progressEvents ProgressEvent[]
+}
+
+// ── 进度事件（完成依据时间线：文件命中 / 状态变化 / 确认完成） ──
+model ProgressEvent {
+  id        String   @id @default(cuid())
+  taskId    String
+  projectId String?
+  type      String   @default("artifact_matched") // artifact_matched | status_changed | confirmed | manual
+  detail    String   @default("")
+  path      String   @default("")
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// ── 笔记 ──
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @default("")
+  type      String   @default("note") // note | document | prompt | learning | idea
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+// ── 资源 ──
+model Resource {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("inbox") // inbox | domain | project | learning | knowledge | command | template
+  description String   @default("")
+  url         String   @default("")
+  status      String   @default("open") // open | handled（收集箱条目标记已处理）
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+// ── 提醒 ──
+model Reminder {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @default("")
+  remindAt  DateTime?
+  status    String   @default("pending") // pending | done
+  createdAt DateTime @default(now())
+}
+
+// ── 学习记录 ──
+model LearningRecord {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @default("")
+  progress  Int      @default(0) // 0-100
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── 长期资产 ──
+model Asset {
+  id        String   @id @default(cuid())
+  title     String
+  type      String   @default("sop") // sop | prompt | skill | project_memory | review
+  content   String   @default("")
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+// ── 复盘 ──
+model Review {
+  id           String   @id @default(cuid())
+  period       String   @default("")
+  summary      String   @default("")
+  problems     String   @default("")
+  achievements String   @default("")
+  nextPlan     String   @default("")
+  createdAt    DateTime @default(now())
+}
+
+// ── AI 会话 ──
+model AiConversation {
+  id          String   @id @default(cuid())
+  title       String   @default("新对话")
+  contextType String   @default("page") // project | page
+  contextId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages    AiMessage[]
+  project     Project? @relation(fields: [contextId], references: [id], onDelete: SetNull)
+}
+
+// ── AI 消息 ──
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  role           String         @default("user") // user | assistant | system
+  content        String         @default("")
+  createdAt      DateTime       @default(now())
+
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

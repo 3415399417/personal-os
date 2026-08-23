@@ -1,0 +1,360 @@
+{
+  "exportedAt": "2026-08-22T12:51:17.162Z",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "cmt1hvbmc0005vguv0fno5xx1",
+      "title": "需求与设计",
+      "description": "",
+      "status": "completed",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-20T12:26:58.329Z",
+      "createdAt": "2026-08-20T12:26:18.900Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvg3g0006vguvue2eqy5g",
+      "title": "UI Clone",
+      "description": "",
+      "status": "completed",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-20T12:26:58.611Z",
+      "createdAt": "2026-08-20T12:26:24.700Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvjjc0007vguvr8s9uaru",
+      "title": "数据层",
+      "description": "",
+      "status": "completed",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-20T12:26:58.886Z",
+      "createdAt": "2026-08-20T12:26:29.160Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvmsl0008vguv42a5zw55",
+      "title": "基础 CRUD",
+      "description": "",
+      "status": "todo",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": null,
+      "createdAt": "2026-08-20T12:26:33.381Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvq1u0009vguvaw4yca47",
+      "title": "数据联动",
+      "description": "",
+      "status": "completed",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-20T12:26:59.614Z",
+      "createdAt": "2026-08-20T12:26:37.602Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvtgp000avguvtrc36ryg",
+      "title": "AI 助手",
+      "description": "",
+      "status": "completed",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-20T12:26:59.938Z",
+      "createdAt": "2026-08-20T12:26:42.025Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hvwm5000bvguvgv6us6v7",
+      "title": "真实数据使用",
+      "description": "",
+      "status": "todo",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": null,
+      "createdAt": "2026-08-20T12:26:46.109Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hw1b1000cvguvup7x1j4a",
+      "title": "打磨与可靠性",
+      "description": "",
+      "status": "doing",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": null,
+      "createdAt": "2026-08-20T12:26:52.189Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt1hw4rn000dvguv214hs4vy",
+      "title": "进阶功能",
+      "description": "",
+      "status": "doing",
+      "group": "doing",
+      "priority": 3,
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": null,
+      "createdAt": "2026-08-20T12:26:56.675Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    },
+    {
+      "id": "cmt2nod7d0000l8uvdgsdx5x6",
+      "title": "继续开发BetterLife",
+      "description": "",
+      "status": "completed",
+      "group": "must",
+      "priority": 3,
+      "projectId": null,
+      "isTodayFocus": false,
+      "dueDate": null,
+      "completedAt": "2026-08-21T10:26:05.815Z",
+      "createdAt": "2026-08-21T07:56:38.233Z",
+      "updatedAt": "2026-08-22T09:55:51.610Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "cmt1hrcmh0003vguvzg18gvwl",
+      "name": "BetterLife AI",
+      "description": "个人管理系统",
+      "status": "active",
+      "progress": 56,
+      "priority": 3,
+      "folderPath": "E:\\我的项目\\personal-os",
+      "isTodayFocus": true,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-08-20T12:23:13.578Z",
+      "updatedAt": "2026-08-22T09:55:51.624Z"
+    },
+    {
+      "id": "cmt1ixhdm002vvguv0joaa47x",
+      "name": "AI-PPT生成器",
+      "description": "",
+      "status": "completed",
+      "progress": 0,
+      "priority": 3,
+      "folderPath": "E:\\我的项目\\AI-PPT生成器",
+      "isTodayFocus": false,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-08-20T12:55:59.290Z",
+      "updatedAt": "2026-08-22T09:55:51.616Z"
+    },
+    {
+      "id": "cmt1iy9kh002wvguv0k1mf09r",
+      "name": "图片工具箱image-toolbox",
+      "description": "",
+      "status": "completed",
+      "progress": 0,
+      "priority": 3,
+      "folderPath": "E:\\我的项目\\图片工具箱image-toolbox",
+      "isTodayFocus": false,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-08-20T12:56:35.825Z",
+      "updatedAt": "2026-08-22T09:55:51.616Z"
+    },
+    {
+      "id": "cmt1izkp5002xvguvk25350n8",
+      "name": "TripAI旅行计划",
+      "description": "",
+      "status": "archived",
+      "progress": 0,
+      "priority": 3,
+      "folderPath": "E:\\我的项目\\TripAI旅行计划",
+      "isTodayFocus": false,
+      "startDate": null,
+      "endDate": null,
+      "createdAt": "2026-08-20T12:57:36.905Z",
+      "updatedAt": "2026-08-22T09:55:51.616Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "cmt1hxedw000evguvzqj2lqkp",
+      "title": "需求与技术",
+      "content": "让 AI 修改系统里的数据（任务/项目/笔记）\n\n这是最有价值也最现实的方向。实现方式：给 AI 接工具调用（function calling），让模型能调用你数据库的 CRUD 接口。做完之后你可以：\n\n\"把'阅读30分钟'标记完成\"\n\"新建一个项目叫'外贸客户跟进系统'，加 3 个任务\"\n\"帮我写一篇今天的工作复盘，存到笔记里\"",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:27:55.796Z",
+      "updatedAt": "2026-08-20T12:27:55.796Z"
+    },
+    {
+      "id": "cmt1hxzq9000fvguv38jefvat",
+      "title": "UI Clone",
+      "content": "让 AI 修改应用本身（界面/代码/功能）\n等于把 dsh/Harness 那种编程 agent 能力内嵌进应用（AI 能读写项目文件、跑命令、重启服务）。技术上可行（接 MCP 服务器或自建工具集），但：\n\n工程量大很多（不是加个 API 的事）\n有安全风险：AI 能改自己的代码，改坏了应用就瘫了，需要\"用户确认每次修改\"的机制\n你现在用 Harness 改代码已经够顺，内嵌到应用里的边际价值不大\n我的建议：方案 ① 值得做，方案 ② 后置甚至不做。",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:28:23.457Z",
+      "updatedAt": "2026-08-20T12:28:23.457Z"
+    },
+    {
+      "id": "cmt1hyfrn000gvguvx8sswl1l",
+      "title": "数据层",
+      "content": "给 /api/chat 加 function calling（DeepSeek 原生支持）：\n   - 请求时传 tools 参数，做工具循环：模型请求工具 → 服务端执行 → 结果回传 → 模型生成回复（支持多轮）\n   - 工具执行直接调用现有 lib/api.ts（服务端），不要走 HTTP\n\n2. 工具清单（映射现有 CRUD）：\n   - 查询：get_projects、get_tasks(可按项目/分组过滤)、get_notes(可按类型)、get_reviews、get_reminders、get_assets\n   - 创建：create_project(name, description, status?)、create_task(title, group, project_id?)、create_note(title, content, type?)、create_review、create_reminder、create_asset\n   - 修改：update_task_status(task_id, done)、set_today_focus(task_id, is_focus)、update_project_status(project_id, status)、update_note(note_id, title?, content?)\n   - 删除：delete_task、delete_project、delete_note —— AI 必须先向用户确认（\"确认删除「xxx」吗？回复确认后执行\"），用户明确确认后才调用",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:28:44.243Z",
+      "updatedAt": "2026-08-20T12:28:44.243Z"
+    },
+    {
+      "id": "cmt1hyul4000hvguvkn4mnkdz",
+      "title": "基础CRUD",
+      "content": "自测：\n   - \"新建一个项目叫 XXX\" → 数据库出现该项目\n   - \"把「阅读30分钟」标记完成\" → 状态变化、进度联动\n   - \"列出所有进行中的项目\" → 返回真实数据\n   - \"删除项目 XXX\" → 先确认再删除\n   - 一次对话连续操作（建项目→加任务→设今日最重要）能完成\n   - 刷新后 AI 操作的数据仍在",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:29:03.448Z",
+      "updatedAt": "2026-08-20T12:29:03.448Z"
+    },
+    {
+      "id": "cmt1hzfpr000ivguvokdlcb99",
+      "title": "数据联动",
+      "content": "/today 页面：\n   - 页面顶部（标题下方）加\"今日总进度条\"：已完成任务数 ÷ 今日任务总数，显示百分比文字（如 \"已完成 3/8 · 38%\"）\n   - 每个分组卡片头部加小组进度条：该组已完成 ÷ 该组总数（\"进行中 2/4\"）\n   - 勾选任务完成/取消 → 所有进度条实时更新\n\n2. 项目详情页（/projects/:id）：\n   - 项目进度条 = 该项目已完成任务 ÷ 总任务（勾选实时联动）——如果已实现就保持\n\n3. 项目列表页和首页\"当前项目\"卡片：\n   - 进度条已按任务计算，确认勾选任务后进度会动即可，不动样式\n\n4. 侧边栏\"待办事项\"：\n   - 在列表下方加一条细进度条：已完成待办 ÷ 总待办（沿用现有 5px 进度条样式）\n\n5. 空状态：今天没有任务时显示\"今日 0/0\"并隐藏进度条或显示 0%，不要报错\n\n6. 自测：添加任务 → 分组进度变；勾选完成 → 总进度和分组进度同时变；刷新后进度保留（数据在数据库里）",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:29:30.831Z",
+      "updatedAt": "2026-08-20T12:29:30.831Z"
+    },
+    {
+      "id": "cmt1i09v0000jvguvgxr2bzxq",
+      "title": "AI助手",
+      "content": "项目根目录（整个项目）\tE:\\我的项目\\personal-os\\\n页面文件（每个路由一个文件夹）\tE:\\我的项目\\personal-os\\app\\（page.tsx 首页、today、projects、ai…）\n全局布局（Sidebar + 顶部导航）\tE:\\我的项目\\personal-os\\components\\layout\\\n首页各模块组件\tE:\\我的项目\\personal-os\\components\\dashboard\\\n数据接口层\tE:\\我的项目\\personal-os\\lib\\api.ts\nMock 数据（正在被淘汰）\tE:\\我的项目\\personal-os\\lib\\mock-data.ts\n数据库表结构（Phase 2+3 后会生成）\tE:\\我的项目\\personal-os\\prisma\\schema.prisma\n样式\tapp\\prototype.css（原型原样搬来的）+ app\\pages.css（功能页扩展）\nAPI 密钥\tE:\\我的项目\\personal-os\\.env.local（DeepSeek key，别外传）\n设计原型（视觉基准）\tC:\\Users\\34153\\Desktop\\Web-Prototype\\personal-os-home.html\n开工手册\tC:\\Users\\34153\\Desktop\\Personal_OS_Clone_v1_可开工开发规格.md\n开工指令\tC:\\Users\\34153\\.openclaw\\workspace\\BetterLife-dsh开工指令-Phase1.md\n启动方式：在 E:\\我的项目\\personal-os\\ 下跑 npm run dev，浏览器打开 http://localhost:3000。\n\n需要我打开某个文件看看现在的状态吗？",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:30:09.900Z",
+      "updatedAt": "2026-08-20T12:30:09.900Z"
+    },
+    {
+      "id": "cmt1ia9oo002cvguvgjm92u1l",
+      "title": "真实数据使用",
+      "content": "之前 .page-scroll 其实有 overflow-y: auto，但没用——因为里面的 .panel（任务列表、项目笔记的容器）是 flex 子项，默认 flex-shrink: 1 会被压缩，内容溢出时被 .panel 自己的 overflow: hidden 直接裁剪掉，滚动容器根本没有溢出，自然滚不动，项目笔记就被\"吃\"掉了。\n\n修复内容\n.panel 改为 flex: none——按内容自然撑高，不压缩；多个面板总高超过视口时，外层 .page-scroll 正常滚动\n滚动条彻底隐藏（跨浏览器）：补上 scrollbar-width: none（Firefox）和 -ms-overflow-style: none（旧 Edge），配合已有的 webkit 规则——鼠标滚轮照常滚动，但看不到滚动条\n验证（1280×680 小视口，贴近真实窗口）\n检查项\t结果\n任务展开后容器可滚动（1038 > 555）\t✅\n滚动条已隐藏且无占位宽度\t✅\n初始项目笔记在视口外（需滚动）\t✅\n滚轮滚动后项目笔记完整可见（top=380）\t✅\ntsc 0 错误，测试数据已清理（你项目的 13 条笔记原样保留）。\n\n刷新页面，展开任务列表后直接滚轮上下滑就能看到项目笔记了，全程没有滚动条。",
+      "type": "note",
+      "projectId": "cmt1hrcmh0003vguvzg18gvwl",
+      "createdAt": "2026-08-20T12:37:56.232Z",
+      "updatedAt": "2026-08-20T12:37:56.232Z"
+    },
+    {
+      "id": "cmt1ihxpt002gvguv9vc4mcyk",
+      "title": "Harness（Phase 2+3）",
+      "content": "进入 Phase 2+3：数据层 + 基础 CRUD。视觉一律不许动（prototype.css、AppShell、页面样式全部保持现状）。\n1. 装 Prisma + SQLite，建 prisma/schema.prisma：Project、Task、Note、Resource、Reminder、LearningRecord、Asset、Review、AiConversation、AiMessage（字段参照手册第 8 节数据模型），migrate 建表\n\n2. lib/api.ts 改成真实数据库实现（函数签名保持不变，组件尽量不改）：项目/任务/笔记/提醒/资产/复盘 的增删改查 + 查询\n\n3. 项目进度条改为真实计算：progress = 该项目已完成任务数 ÷ 总任务数；勾选任务完成 → 项目进度实时更新（首页/项目列表/项目详情三处同步）\n\n4. 所有操作持久化：新建/编辑/删除/勾选/改状态 → 写 SQLite，刷新不丢\n\n5. 建 prisma/seed.ts：把 mock-data.ts 的现有数据迁进去作为初始种子（真实数据稍后替换）\n\n6. 自测：创建 → 刷新 → 数据还在；完成任务 → 进度变化；所有页面正常渲染",
+      "type": "note",
+      "projectId": null,
+      "createdAt": "2026-08-20T12:43:53.969Z",
+      "updatedAt": "2026-08-20T12:43:53.969Z"
+    },
+    {
+      "id": "cmt1itd4e002rvguvjtksgpyi",
+      "title": "项目笔记文件夹功能",
+      "content": "实现内容\n笔记页 /notes 现在把笔记分成两类展示：\n\n📁 项目笔记文件夹（紫色实心文件夹图标卡片）：\n\n标题 = 项目名字，右上角徽章显示笔记数（如「2 篇」「7 篇」）\n同一项目的所有笔记自动合并成一个文件夹，不再散落成单张卡片\n点击文件夹 → 弹出该项目笔记列表 → 点任意一条 → 打开查看弹窗（Markdown 渲染 + 删除功能齐全）\n📝 个人笔记：不关联项目的笔记保持单张卡片显示，类型筛选照常生效\n\n验证（7 项全过）\n检查项\t结果\n项目笔记合并为文件夹卡片（项目名 + N 篇）\t✅\n个人笔记仍单独显示\t✅\n文件夹弹窗列出该项目全部笔记\t✅\n弹窗内不含个人笔记\t✅\n点击条目打开查看弹窗（内容渲染）\t✅\n关闭查看后回到文件夹弹窗\t✅\ntsc 0 错误，测试数据已清理。\n\n刷新 /notes 就能看到：你项目里的 7 篇笔记（Harness、Real 时代AI…）现在收进「BetterLife AI」文件夹里，点开就能浏览。以后在项目详情页新建的笔记会自动归入这个文件夹。",
+      "type": "note",
+      "projectId": null,
+      "createdAt": "2026-08-20T12:52:47.150Z",
+      "updatedAt": "2026-08-20T12:52:47.150Z"
+    },
+    {
+      "id": "cmt1ivxwp002tvguv1a3nk1bo",
+      "title": "调整内容",
+      "content": "每条笔记上下 padding：1px → 10px（每行高度从约 24px 提升到 38-39px）\n行与行之间加 2px 间隙\n标题垂直居中\n验证\n每行高度 38-39px（舒适区间）✅\n标题垂直居中 ✅\n刷新首页即可看到，两条笔记（项目笔记文件夹功能 / Harness (Phase 2+3)）现在上下间距舒展多了。",
+      "type": "note",
+      "projectId": null,
+      "createdAt": "2026-08-20T12:54:47.401Z",
+      "updatedAt": "2026-08-20T12:54:47.401Z"
+    },
+    {
+      "id": "cmt1iwb6h002uvguvzdkgmm3q",
+      "title": "设计判断",
+      "content": "「最近沉淀」= 个人沉淀库，只显示不关联项目的笔记：\n\n位置\t显示内容\n首页「最近沉淀」\t✅ 只显示个人笔记（在首页/笔记页新建、不关联项目的）\n项目详情页「项目笔记」\t✅ 只显示该项目下的笔记\n笔记页 /notes\t✅ 全量笔记库（个人 + 项目的都在）\n和你之前「待办 vs 项目任务」的分离是同一个心智模型：项目的东西归项目，个人的归个人。你截图里那几条项目笔记（AI助手、数据联动、基础CRUD 等）现在不会再出现在首页最近沉淀了，它们在项目详情页里看。\n\n验证（6 项全过）\n检查项\t结果\n最近沉淀显示个人笔记\t✅\n最近沉淀不显示项目笔记\t✅\n项目详情显示项目笔记\t✅\n项目详情不显示个人笔记\t✅\n笔记页全量包含项目笔记\t✅\n笔记页全量包含个人笔记\t✅\ntsc 0 错误，测试数据已清理。刷新首页即可看到效果。",
+      "type": "note",
+      "projectId": null,
+      "createdAt": "2026-08-20T12:55:04.601Z",
+      "updatedAt": "2026-08-20T12:55:04.601Z"
+    },
+    {
+      "id": "cmt1j94uf003jvguvxfukhsha",
+      "title": "笔记页 /notes",
+      "content": "📁 项目笔记文件夹（紫色实心文件夹图标卡片）：\n\n标题 = 项目名字，右上角徽章显示笔记数（如「2 篇」「7 篇」）\n同一项目的所有笔记自动合并成一个文件夹，不再散落成单张卡片\n点击文件夹 → 弹出该项目笔记列表 → 点任意一条 → 打开查看弹窗（Markdown 渲染 + 删除功能齐全）\n📝 个人笔记：不关联项目的笔记保持单张卡片显示，类型筛选照常生效\n\n验证（7 项全过）\n检查项\t结果\n项目笔记合并为文件夹卡片（项目名 + N 篇）\t✅\n个人笔记仍单独显示\t✅\n文件夹弹窗列出该项目全部笔记\t✅\n弹窗内不含个人笔记\t✅\n点击条目打开查看弹窗（内容渲染）\t✅\n关闭查看后回到文件夹弹窗\t✅\ntsc 0 错误，测试数据已清理。\n\n刷新 /notes 就能看到：你项目里的 7 篇笔记（Harness、Real 时代AI…）现在收进「BetterLife AI」文件夹里，点开就能浏览。以后在项目详情页新建的笔记会自动归入这个文件夹。",
+      "type": "note",
+      "projectId": null,
+      "createdAt": "2026-08-20T13:05:02.919Z",
+      "updatedAt": "2026-08-20T13:05:02.919Z"
+    },
+    {
+      "id": "cmt1kc4em0009ukuvtprlc78g",
+      "title": "现在AI时代快速进入大众生活，我觉得冲击比较大的是程序员相关的行业，从码农转变为",
+      "content": "一、架构师不是\"行业\"，是程序员职业路径的上层岗位\n它不是一个独立的行业（没有\"架构师公司\"），而是程序员能力进阶后的角色。就像\"厨师\"和\"行政总厨\"的关系——都是餐饮业，但职责完全不同。\n\n码农（执行者）\t架构师（决策者）\n核心工作\t把设计好的方案写出来\t决定方案是什么\n思考起点\t\"怎么写这段代码\"\t\"该不该做、用什么做、做到什么程度\"\n交付物\t代码\t技术决策 + 系统设计 + 规范\n出错代价\t一个 bug\t整个系统返工\n二、架构师到底干什么（4 件事）\n翻译：把业务需求翻译成技术方案 —— \"老板要一个个人 OS\"，你要决定：用什么技术栈、数据怎么建模、分几个模块、哪些先做哪些后做\n权衡：所有方案都是 trade-off。要快 → 牺牲扩展性；要省钱 → 牺牲性能。架构师是那个\"拍板并承担后果\"的人\n定规矩：设计好模块边界、接口、数据流，让团队在框架里高效干活，而不是每个人都随心所欲\n兜底：团队解决不了的最难问题（性能瓶颈、系统崩溃、复杂联动），你上\n三、为什么 AI 时代\"码农 → 架构师\"是必然\n因为 AI 让\"写代码\"无限贬值，让\"做决策\"无限升值：\n\nAI 能写代码，但 AI 不知道为什么要写、不知道约束是什么、错了不承担责任\n你让 AI 写 6.5K 行代码很容易（今天刚经历过），但让 AI 决定\"这个项目该用 SQLite 还是 PostgreSQL、数据模型怎么设计、AI 工具调用该怎么约束\"——它给不了可靠答案，因为决策需要上下文和责任感\n架构师 = 定义问题的人，AI = 执行问题的人。定义问题永远比执行问题值钱\n你自己今天的经历就是活例子：你定方向（视觉锁死、空库起步、AI 只操作数据不碰代码），Harness 负责执行。你已经是个\"单兵架构师\"了。\n\n四、架构师应该会什么（技能树）\n硬技能：\n\n系统设计：模块划分、分层、数据建模（你 personal-os 的 Prisma 10 张表就是入门练习）\n技术选型：知道常见方案的优缺点和适用场景\n性能/安全/可靠性意识\n领域知识：你服务的业务本身（外贸？教育？），架构师必须懂业务\n软技能（往往更重要）：\n\n抽象思维：从具体需求里提炼出通用结构\n沟通能力：跟不懂技术的老板/客户讲清楚方案和成本\n决策能力：信息不全时敢拍板\n成本意识：每个方案都有价格\nAI 时代新增技能：\n\n驾驭 AI 工具链（你已经在做了）\n评估 AI 产出质量（今天你验收 dsh 的代码就是）\n把 AI 能力设计进系统（你的 function calling 工具约束就是架构决策）\n五、你怎么从事这个岗位（实操路径）\n别等\"被任命\"，架构思维现在就能练：\n\n把 personal-os 当练功房：每个功能先写方案（数据结构、接口、边界）再让 AI 实现。你已经在做了——roadmap 文档、开工指令、验收标准，这些就是架构师的工作产物\n练习写\"技术方案文档\"：哪怕是自己看。方案 = 背景 + 方案 + 为什么选它 + 不选别的。写多了，思维就成型了\n从系统设计经典入门：《数据密集型应用系统设计》(DDIA) 是圣经级别，先读前 6 章\n在工作中抢\"设计活\"：代码评审、模块设计、技术调研——主动承担，别只接实现任务\n转型的现实路径：高级工程师 → 技术负责人（带 2-3 人，做模块设计）→ 架构师。小公司架构师往往 = 全栈 + 决策 + 救火，大公司有专门架构组。对多数人来说，\"技术负责人\"和\"架构师\"是一回事，只是叫法不同\n六、给你的一句话总结\n码农卖的是\"手\"，架构师卖的是\"判断\"。AI 把\"手\"的价格打到地板了，所以\"判断\"越来越贵。你不需要换行业，只需要从\"让 AI 帮你写代码\"升级到\"你负责判断，AI 负责执行\"——这条路你已经在走了，把它变成职业方向就行。",
+      "type": "idea",
+      "projectId": null,
+      "createdAt": "2026-08-20T13:35:21.934Z",
+      "updatedAt": "2026-08-20T13:35:21.934Z"
+    }
+  ],
+  "resources": [
+    {
+      "id": "cmt2u4q5d0000w0uviuebp3g3",
+      "name": "行业报告",
+      "type": "inbox",
+      "description": "",
+      "url": "",
+      "status": "handled",
+      "projectId": null,
+      "createdAt": "2026-08-21T10:57:19.201Z",
+      "updatedAt": "2026-08-21T10:57:25.736Z"
+    }
+  ],
+  "reminders": [],
+  "learnings": [
+    {
+      "id": "cmt1kt9yo0010ukuv88954sro",
+      "title": "战报学习",
+      "content": "",
+      "progress": 45,
+      "createdAt": "2026-08-20T13:48:42.288Z",
+      "updatedAt": "2026-08-20T13:48:42.288Z"
+    }
+  ],
+  "assets": [
+    {
+      "id": "cmt1bkdrb0013l8uvs7ad95bn",
+      "title": "功能验收项目 - 验收笔记沉淀",
+      "type": "project_memory",
+      "content": "来自收集箱的灵感笔记《功能验收笔记》（今天 17:29 收录），归档到「功能验收项目」，作为验收要点/经验沉淀。",
+      "projectId": null,
+      "createdAt": "2026-08-20T09:29:50.759Z",
+      "updatedAt": "2026-08-20T09:29:50.759Z"
+    }
+  ],
+  "reviews": [],
+  "conversations": []
+}

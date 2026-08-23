@@ -1,0 +1,70 @@
+import puppeteer from "puppeteer-core";
+import fs from "fs";
+
+(async () => {
+  const browser = await puppeteer.launch({
+    executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    headless: "new",
+    args: ["--no-sandbox", "--disable-gpu"],
+  });
+  const page = await browser.newPage();
+  await page.goto("about:blank");
+
+  const filePath = "C:\\Users\\34153\\.openclaw\\media\\inbound\\image---c2d1f859-ba2e-4a0e-b911-d462f21c0b97.png";
+  const buf = fs.readFileSync(filePath);
+  const dataUrl = `data:image/png;base64,${buf.toString("base64")}`;
+
+  const outDataUrl = await page.evaluate(async (src) => {
+    const bmp = await createImageBitmap(await (await fetch(src)).blob());
+    const w = bmp.width;
+    const h = bmp.height;
+    const c1 = document.createElement("canvas");
+    c1.width = w;
+    c1.height = h;
+    const ctx1 = c1.getContext("2d");
+    ctx1.drawImage(bmp, 0, 0);
+    const img = ctx1.getImageData(0, 0, w, h);
+    const data = img.data;
+
+    const isWhite = (x, y) => {
+      const i = (y * w + x) * 4;
+      return data[i + 3] > 0 && data[i] > 233 && data[i + 1] > 233 && data[i + 2] > 233;
+    };
+    const visited = new Uint8Array(w * h);
+    const queue = [];
+    for (let x = 0; x < w; x++) {
+      for (const y of [0, h - 1]) if (isWhite(x, y)) queue.push(y * w + x);
+    }
+    for (let y = 0; y < h; y++) {
+      for (const x of [0, w - 1]) if (isWhite(x, y)) queue.push(y * w + x);
+    }
+    while (queue.length) {
+      const idx = queue.pop();
+      if (visited[idx]) continue;
+      visited[idx] = 1;
+      const x = idx % w;
+      const y = (idx / w) | 0;
+      if (!isWhite(x, y)) continue;
+      data[idx * 4 + 3] = 0;
+      if (x + 1 < w && !visited[idx + 1]) queue.push(idx + 1);
+      if (x - 1 >= 0 && !visited[idx - 1]) queue.push(idx - 1);
+      if (y + 1 < h && !visited[idx + w]) queue.push(idx + w);
+      if (y - 1 >= 0 && !visited[idx - w]) queue.push(idx - w);
+    }
+    ctx1.putImageData(img, 0, 0);
+
+    const c2 = document.createElement("canvas");
+    c2.width = w * 4;
+    c2.height = h * 4;
+    const ctx2 = c2.getContext("2d");
+    ctx2.imageSmoothingEnabled = false;
+    ctx2.drawImage(c1, 0, 0, c2.width, c2.height);
+    return c2.toDataURL("image/png");
+  }, dataUrl);
+
+  const base64 = outDataUrl.split(",")[1];
+  const out = "E:\\我的项目\\personal-os\\public\\art\\proj-sub.png";
+  fs.writeFileSync(out, Buffer.from(base64, "base64"));
+  console.log(`saved ${out} (${Buffer.from(base64, "base64").length} bytes)`);
+  await browser.close();
+})().catch((e) => { console.error("ERR:", e.message); process.exit(1); });

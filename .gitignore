@@ -1,0 +1,34 @@
+# 环境变量（含 API Key），禁止提交
+.env
+.env.local
+.env*.local
+
+# 依赖 / 构建产物
+node_modules/
+.next/
+out/
+dist/
+
+# 数据库（本地数据，不提交）
+dev.db
+dev.db-journal
+dev.db-shm
+dev.db-wal
+*.db
+backup/
+
+# Prisma 生成的 client（每次 generate 重新生成）
+/lib/generated/prisma
+
+# 类型/编译缓存
+*.tsbuildinfo
+
+# IDE / 个人配置
+.windsurf/
+.claude/
+.idea/
+.vscode/
+
+# 验证截图/临时产物（_verify 下的图片等大文件按需提交）
+_verify/*.png
+_verify/*.log

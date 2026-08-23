@@ -2673,3 +2673,17 @@ li:hover > .task-focus { opacity: 1; }
   background: #FEF3C7; border: 1px solid #FDE68A;
   border-radius: var(--radius-pill); padding: 1px 7px; line-height: 1.6;
 }
+/* ── 最近沉淀：类型标签 + 今日高亮 ── */
+[data-od-id="card-notes"] .note-item .note-meta-row {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+[data-od-id="card-notes"] .note-item .note-type-tag {
+  font-size: 9px; padding: 0 6px; flex: none;
+  color: var(--accent-deep); background: var(--accent-tint); border-color: var(--border);
+  font-family: var(--font);
+}
+[data-od-id="card-notes"] .note-item .note-item-time { font-size: 10.5px; }
+[data-od-id="card-notes"] .note-item.note-today b { color: var(--accent-deep); }
+[data-od-id="card-notes"] .note-item.note-today .note-type-tag {
+  background: var(--accent-tint); border-color: var(--accent-light); color: var(--accent-deep); font-weight: 700;
+}

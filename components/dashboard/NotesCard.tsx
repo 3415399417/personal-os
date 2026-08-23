@@ -64,7 +64,7 @@ export function NotesCard({
         <ul className="note-list">
           {notes.slice(0, 3).map((n) => (
             <li
-              className="note-item"
+              className={`note-item${n.time.startsWith("今天") ? " note-today" : ""}`}
               key={n.id}
               role="button"
               tabIndex={0}
@@ -76,7 +76,10 @@ export function NotesCard({
               <img src="/art/notes-note-ico.png" alt="" className="notes-note-ico" />
               <div>
                 <b>{n.title}</b>
-                <em>{n.time}</em>
+                <em className="note-meta-row">
+                  <span className="tag note-type-tag">{n.type}</span>
+                  <span className="note-item-time">{n.time}</span>
+                </em>
               </div>
             </li>
           ))}

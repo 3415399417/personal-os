@@ -538,13 +538,17 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* 感知引导：未关联文件夹时提示开启进度感知 */}
-          {!project.folderPath && project.tasks.length > 0 && (
+          {/* 感知引导：未关联文件夹时提示开启进度感知（空项目也显示，新建项目第一步就引导） */}
+          {!project.folderPath && (
             <div className="sense-guide" role="note">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
                 <path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9.5V18A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z" />
               </svg>
-              <span className="sense-guide-text">设置项目文件夹后，系统将自动检测开发进度（任务状态点、完成依据）</span>
+              <span className="sense-guide-text">
+                {project.tasks.length > 0
+                  ? "设置项目文件夹后，系统将自动检测开发进度（任务状态点、完成依据）"
+                  : "设置项目文件夹，开始使用进度感知（自动检测开发进度）"}
+              </span>
               <button
                 type="button"
                 className="btn btn-primary"

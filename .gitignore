@@ -29,6 +29,10 @@ backup/
 .idea/
 .vscode/
 
-# 验证截图/临时产物（_verify 下的图片等大文件按需提交）
+# 第三方工具本地文件
+.workbuddy/
+
+# 验证截图/临时产物
 _verify/*.png
 _verify/*.log
+_verify/review-shots/

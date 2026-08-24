@@ -282,8 +282,8 @@ export function deleteInboxItem(id: string): Promise<void> {
   return call<void>("deleteInboxItem", { id });
 }
 
-/** 资源中心卡片：新建资源条目 */
-export function createResourceEntry(input: { name: string; type?: string; description?: string }): Promise<{ id: string; name: string; type: string; time: string }> {
+/** 资源中心卡片：新建资源条目（url 供领域库存链接） */
+export function createResourceEntry(input: { name: string; type?: string; description?: string; url?: string }): Promise<{ id: string; name: string; type: string; time: string }> {
   return call("createResourceEntry", input);
 }
 
@@ -293,7 +293,7 @@ export function deleteLatestResourceEntry(type: string): Promise<{ deleted: stri
 }
 
 /** 按类型查资源（领域库/知识库/指令库/模板库子页面） */
-export function getResources(type: string): Promise<{ id: string; name: string; description: string; time: string }[]> {
+export function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string }[]> {
   return call("getResources", { type });
 }
 

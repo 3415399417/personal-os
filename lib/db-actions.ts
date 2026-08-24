@@ -860,7 +860,7 @@ export async function markInboxHandled(id: string, handled: boolean): Promise<vo
 /* ── 通用资源条目（资源中心卡片用；type: inbox/domain/template 等） ── */
 
 /** 按类型查资源（领域库/知识库/指令库/模板库等子页面用） */
-export async function getResources(type: string): Promise<{ id: string; name: string; description: string; time: string }[]> {
+export async function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string }[]> {
   const rows = await prisma.resource.findMany({
     where: { type },
     orderBy: { createdAt: "desc" },
@@ -869,6 +869,7 @@ export async function getResources(type: string): Promise<{ id: string; name: st
     id: r.id,
     name: r.name,
     description: r.description ?? "",
+    url: r.url ?? "",
     time: formatTime(r.createdAt),
   }));
 }
@@ -882,12 +883,14 @@ export async function createResourceEntry(input: {
   name: string;
   type?: string;
   description?: string;
+  url?: string;
 }): Promise<{ id: string; name: string; type: string; time: string }> {
   const r = await prisma.resource.create({
     data: {
       name: input.name,
       type: input.type ?? "domain",
       description: input.description ?? "",
+      url: input.url ?? "",
       status: "open",
     },
   });

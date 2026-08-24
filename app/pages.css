@@ -2716,6 +2716,49 @@ li:hover > .task-focus { opacity: 1; }
   -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5;
 }
 .res-item-time { font-size: 10.5px; color: var(--muted-soft, var(--muted)); }
+/* ── 领域库：书签卡片（打开链接） ── */
+.res-grid-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px;
+}
+.res-domain-card .res-domain-host {
+  font-size: 10.5px; color: var(--accent-deep); background: var(--accent-tint);
+  padding: 2px 8px; border-radius: var(--radius-pill); max-width: 130px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.res-open-btn {
+  height: 24px; font-size: 11px; padding: 0 10px; text-decoration: none;
+}
+/* ── 知识库：条目列表 + 阅读弹窗 ── */
+.res-know-item .res-item-body em {
+  -webkit-line-clamp: 1;
+}
+.res-know-view { display: flex; flex-direction: column; gap: 6px; }
+.res-know-time { font-size: 10.5px; color: var(--muted); }
+/* ── 指令库：代码块 + 复制 ── */
+.res-cmd-list { display: flex; flex-direction: column; gap: 10px; }
+.res-cmd-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+}
+.res-cmd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.res-cmd-head b { font-size: 13.5px; color: var(--fg); }
+.res-cmd-use { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.5; }
+.res-cmd-body {
+  margin: 0; padding: 10px 12px; background: var(--surface-deep, #f6f6f8);
+  border-radius: 8px; font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11.5px; line-height: 1.6; color: var(--fg); white-space: pre-wrap; word-break: break-all;
+  max-height: 180px; overflow-y: auto;
+}
+.res-copy-btn { height: 24px; font-size: 11px; padding: 0 10px; }
+.res-copy-btn.copied { color: #059669; border-color: #A7F3D0; background: #ECFDF5; }
+/* ── 模板库：模板卡片 + 预览 ── */
+.res-tpl-preview { height: 24px; font-size: 11px; padding: 0 10px; }
+.res-tpl-preview-body {
+  margin: 0; padding: 12px; background: var(--surface-deep, #f6f6f8); border-radius: 8px;
+  font-size: 12px; line-height: 1.7; color: var(--fg); white-space: pre-wrap; word-break: break-all;
+  max-height: 55vh; overflow-y: auto;
+}
+.res-desc-lg { min-height: 160px; }
 /* ── 最近沉淀：类型标签 + 今日高亮（通用类，首页/详情页 note-item 共用） ── */
 .note-item .note-meta-row {
   display: inline-flex; align-items: center; gap: 6px;

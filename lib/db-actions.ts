@@ -202,13 +202,18 @@ function noteTypeKey(type: string): string {
 export async function getDashboard(): Promise<DashboardData> {
   const [tasks, projects, notes, resources, learning, assets, reminders] = await Promise.all([
     prisma.task.findMany(),
-    prisma.project.findMany({ orderBy: { updatedAt: "desc" } }),
+    prisma.project.findMany(),
     prisma.note.findMany({ where: { projectId: null }, orderBy: { createdAt: "desc" }, take: 6 }),
     prisma.resource.findMany(),
     prisma.learningRecord.findMany(),
     prisma.asset.findMany(),
     prisma.reminder.findMany({ orderBy: { remindAt: "asc" } }),
   ]);
+  // 已完成项目沉底（与 getProjects 排序一致），其余按更新时间倒序
+  projects.sort((a, b) => {
+    const rank = (s: string) => (s === "completed" ? 1 : 0);
+    return rank(a.status) - rank(b.status) || b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
 
   // 今日执行/今日状态统计范围：个人任务 + 今日焦点项目的任务（未设焦点项目则只有个人任务）
   const focusProject = projects.find((p) => p.isTodayFocus) ?? null;
@@ -521,7 +526,12 @@ export async function syncProjectProgress(projectId: string) {
 /* ── 项目 ── */
 
 export async function getProjects(): Promise<Project[]> {
-  const projects = await prisma.project.findMany({ orderBy: { updatedAt: "desc" } });
+  const projects = await prisma.project.findMany();
+  // 已完成沉底（标记完成会更新 updatedAt，不能按时间裸排），其余按更新时间倒序
+  projects.sort((a, b) => {
+    const rank = (s: string) => (s === "completed" ? 1 : 0);
+    return rank(a.status) - rank(b.status) || b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
   const tasks = await prisma.task.findMany();
   return projects.map((p) => {
     const ptasks = tasks.filter((t) => t.projectId === p.id);

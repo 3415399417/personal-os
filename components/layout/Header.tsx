@@ -12,6 +12,7 @@ interface SearchResult {
   id: string;
   title: string;
   meta: string;
+  type?: string; // 资源条目的类型（inbox/domain/knowledge/command/template）
 }
 
 interface SearchResults {
@@ -110,6 +111,11 @@ export function Header({ onMenuClick }: HeaderProps) {
     if (key === "projects") return `/projects/${item.id}`;
     if (key === "tasks") return `/today`;
     if (key === "notes") return `/notes`;
+    if (key === "resources") {
+      const t = (item as { type?: string }).type;
+      if (!t || t === "inbox") return `/inbox`;
+      return `/resources/${t}`;
+    }
     return `/assets`;
   };
 

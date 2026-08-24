@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         tasks: tasks.map((t) => ({ id: t.id, title: t.title, meta: t.status === "completed" ? "已完成" : "任务" })),
         projects: projects.map((p) => ({ id: p.id, title: p.name, meta: "项目" })),
         notes: notes.map((n) => ({ id: n.id, title: n.title, meta: "笔记" })),
-        resources: resources.map((r) => ({ id: r.id, title: r.name, meta: "资源" })),
+        resources: resources.map((r) => ({ id: r.id, title: r.name, type: r.type, meta: r.type === "inbox" ? "收集箱" : r.type === "domain" ? "领域库" : r.type === "knowledge" ? "知识库" : r.type === "command" ? "指令库" : r.type === "template" ? "模板库" : "资源" })),
       },
     });
   } catch (err) {

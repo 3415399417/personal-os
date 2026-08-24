@@ -292,6 +292,16 @@ export function deleteLatestResourceEntry(type: string): Promise<{ deleted: stri
   return call("deleteLatestResourceEntry", { type });
 }
 
+/** 按类型查资源（领域库/知识库/指令库/模板库子页面） */
+export function getResources(type: string): Promise<{ id: string; name: string; description: string; time: string }[]> {
+  return call("getResources", { type });
+}
+
+/** 按 id 删除资源条目 */
+export function deleteResource(id: string): Promise<void> {
+  return call("deleteResource", { id });
+}
+
 /* ── /assets ── */
 
 export function getAssets(): Promise<Asset[]> {

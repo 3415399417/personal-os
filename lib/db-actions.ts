@@ -272,12 +272,12 @@ export async function getDashboard(): Promise<DashboardData> {
     })),
     resources: [
       { id: "r1", label: "收集箱", count: resources.filter((r) => r.type === "inbox" && r.status === "open").length, href: "/inbox" },
-      { id: "r2", label: "领域库", count: resources.filter((r) => r.type === "domain").length, href: "/assets" },
+      { id: "r2", label: "领域库", count: resources.filter((r) => r.type === "domain").length, href: "/resources/domain" },
       { id: "r3", label: "项目库", count: projects.length, href: "/projects" },
       { id: "r4", label: "学习库", count: learning.length, href: "/learning" },
-      { id: "r5", label: "知识库", count: notes.length, href: "/notes" },
-      { id: "r6", label: "指令库", count: assets.filter((a) => a.type === "prompt").length, href: "/assets" },
-      { id: "r7", label: "模板库", count: resources.filter((r) => r.type === "template").length, href: "/notes" },
+      { id: "r5", label: "知识库", count: resources.filter((r) => r.type === "knowledge").length, href: "/resources/knowledge" },
+      { id: "r6", label: "指令库", count: resources.filter((r) => r.type === "command").length, href: "/resources/command" },
+      { id: "r7", label: "模板库", count: resources.filter((r) => r.type === "template").length, href: "/resources/template" },
     ],
     reminders: reminders.map(toReminder),
     notes: notes.slice(0, 6).map((n) => ({
@@ -858,6 +858,25 @@ export async function markInboxHandled(id: string, handled: boolean): Promise<vo
 }
 
 /* ── 通用资源条目（资源中心卡片用；type: inbox/domain/template 等） ── */
+
+/** 按类型查资源（领域库/知识库/指令库/模板库等子页面用） */
+export async function getResources(type: string): Promise<{ id: string; name: string; description: string; time: string }[]> {
+  const rows = await prisma.resource.findMany({
+    where: { type },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description ?? "",
+    time: formatTime(r.createdAt),
+  }));
+}
+
+/** 按 id 删除资源条目 */
+export async function deleteResource(id: string): Promise<void> {
+  await prisma.resource.delete({ where: { id } });
+}
 
 export async function createResourceEntry(input: {
   name: string;

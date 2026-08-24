@@ -1279,9 +1279,9 @@ li:hover > .task-focus { opacity: 1; }
 .res-row-cell:nth-child(4) {
   grid-column: 1;
 }
-/* 模板库（第 7 格）半透明：右下角插画透出，视觉融合 */
+/* 模板库（第 7 格）半透明：右下角插画透出，视觉融合（0.72 保证文字可读） */
 .res-row-cell:nth-child(7) {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.72);
 }
 .res-row-cell {
   display: flex;
@@ -2707,6 +2707,15 @@ li:hover > .task-focus { opacity: 1; }
 .file-picker-item:hover { background: var(--accent-tint); color: var(--accent-deep); }
 .file-picker-empty { font-size: 11.5px; color: var(--muted); padding: 10px 8px; }
 .file-picker-note { font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+/* ── 资源子页面（领域库/知识库/指令库/模板库） ── */
+.res-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.res-item-body b { font-size: 13px; color: var(--fg); font-weight: 600; word-break: break-all; line-height: 1.4; }
+.res-item-body em {
+  font-style: normal; font-size: 11.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5;
+}
+.res-item-time { font-size: 10.5px; color: var(--muted-soft, var(--muted)); }
 /* ── 最近沉淀：类型标签 + 今日高亮（通用类，首页/详情页 note-item 共用） ── */
 .note-item .note-meta-row {
   display: inline-flex; align-items: center; gap: 6px;

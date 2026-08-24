@@ -1,6 +1,7 @@
 // /api/incubate — 文档孵化：粘贴开发文档 → AI 生成项目 + 任务清单（含产物 artifacts）
 // 仅解析预览，不落库；确认后由前端调 /api/data 的 createProjectWithTasks 入库。
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,39 @@ const API_URL = process.env.DEEPSEEK_API_URL ?? "https://api.deepseek.com";
 const API_KEY = process.env.DSH_DEEPSEEK_KEY;
 
 const MAX_DOC_CHARS = 20000;
+
+/** 中文/英文 bigram 关键词集合（推荐资产评分用，无需分词库） */
+function bigrams(text: string): Set<string> {
+  const t = text.toLowerCase();
+  const out = new Set<string>();
+  for (let i = 0; i < t.length - 1; i++) {
+    const c = t[i] + t[i + 1];
+    if (/[\u4e00-\u9fa5a-z0-9]/.test(c)) out.add(c);
+  }
+  return out;
+}
+
+/** 按文档内容推荐资产（指令/模板）：bigram 交集评分，每类最多 3 条 */
+async function recommendAssets(docText: string) {
+  const docGram = bigrams(docText);
+  const assets = await prisma.resource.findMany({
+    where: { type: { in: ["command", "template"] } },
+    select: { id: true, name: true, description: true, type: true },
+  });
+  const scored = assets
+    .map((a) => {
+      const grams = bigrams(`${a.name} ${a.description ?? ""}`);
+      let hit = 0;
+      for (const g of grams) if (docGram.has(g)) hit++;
+      return { ...a, score: hit };
+    })
+    .filter((a) => a.score >= 2)
+    .sort((a, b) => b.score - a.score);
+  return {
+    commands: scored.filter((a) => a.type === "command").slice(0, 3).map((a) => ({ id: a.id, name: a.name, description: (a.description ?? "").slice(0, 60) })),
+    templates: scored.filter((a) => a.type === "template").slice(0, 3).map((a) => ({ id: a.id, name: a.name, description: (a.description ?? "").slice(0, 60) })),
+  };
+}
 
 const SYSTEM_PROMPT = `你是资深技术项目经理。用户会给你一份新项目的开发文档，你要把它拆解成一份可执行的开发计划。
 
@@ -145,7 +179,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: `解析 AI 输出失败：${err instanceof Error ? err.message : String(err)}` }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, plan });
+    return NextResponse.json({ ok: true, plan, assets: await recommendAssets(docText) });
   } catch (err) {
     console.error("[api/incubate] failed:", err);
     return NextResponse.json({ ok: false, error: "调用 AI 服务失败" }, { status: 502 });

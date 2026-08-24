@@ -12,6 +12,13 @@ interface IncubateModalProps {
   onCreated?: () => void;
 }
 
+/** 孵化推荐资产（AI 记忆器官：文档→指令/模板推荐，用户勾选确认才关联） */
+interface RecommendedAsset {
+  id: string;
+  name: string;
+  description: string;
+}
+
 type Stage = "input" | "parsing" | "preview" | "creating";
 
 const GROUP_OPTIONS: { value: IncubateTask["group"]; label: string }[] = [
@@ -46,6 +53,8 @@ export function IncubateModal({ open, onClose, onCreated }: IncubateModalProps) 
   const [doc, setDoc] = useState("");
   const [error, setError] = useState("");
   const [plan, setPlan] = useState<IncubatePlan | null>(null);
+  const [assets, setAssets] = useState<{ commands: RecommendedAsset[]; templates: RecommendedAsset[] }>({ commands: [], templates: [] });
+  const [pickedAssets, setPickedAssets] = useState<Set<string>>(new Set());
 
   const MAX_CHARS = 20000;
 
@@ -76,6 +85,8 @@ export function IncubateModal({ open, onClose, onCreated }: IncubateModalProps) 
     setDoc("");
     setError("");
     setPlan(null);
+    setAssets({ commands: [], templates: [] });
+    setPickedAssets(new Set());
   };
 
   const close = () => {
@@ -93,7 +104,9 @@ export function IncubateModal({ open, onClose, onCreated }: IncubateModalProps) 
     setStage("parsing");
     incubatePlan(v)
       .then((p) => {
-        setPlan(p);
+        setPlan(p.plan);
+        setAssets(p.assets ?? { commands: [], templates: [] });
+        setPickedAssets(new Set());
         setStage("preview");
       })
       .catch((e: Error) => {
@@ -115,6 +128,7 @@ export function IncubateModal({ open, onClose, onCreated }: IncubateModalProps) 
         group: t.group,
         artifacts: t.artifacts,
       })),
+      resources: Array.from(pickedAssets),
     })
       .then(({ project }) => {
         onCreated?.();
@@ -224,6 +238,61 @@ export function IncubateModal({ open, onClose, onCreated }: IncubateModalProps) 
               onChange={(e) => updatePlan({ description: e.target.value })}
             />
           </div>
+
+          {(assets.commands.length > 0 || assets.templates.length > 0) && (
+            <div className="incubate-assets">
+              <div className="incubate-tasks-head">
+                <span className="field-label">推荐关联资产（勾选后关联到新项目）</span>
+                <span className="field-hint">根据文档内容匹配的指令与模板，可在资源库继续补充</span>
+              </div>
+              {assets.commands.length > 0 && (
+                <div className="incubate-asset-group">
+                  <span className="incubate-asset-type">🤖 指令</span>
+                  {assets.commands.map((a) => (
+                    <label className={`incubate-asset${pickedAssets.has(a.id) ? " picked" : ""}`} key={a.id}>
+                      <input
+                        type="checkbox"
+                        checked={pickedAssets.has(a.id)}
+                        onChange={() => {
+                          setPickedAssets((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(a.id)) next.delete(a.id);
+                            else next.add(a.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <b>{a.name}</b>
+                      {a.description && <em>{a.description}</em>}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {assets.templates.length > 0 && (
+                <div className="incubate-asset-group">
+                  <span className="incubate-asset-type">📄 模板</span>
+                  {assets.templates.map((a) => (
+                    <label className={`incubate-asset${pickedAssets.has(a.id) ? " picked" : ""}`} key={a.id}>
+                      <input
+                        type="checkbox"
+                        checked={pickedAssets.has(a.id)}
+                        onChange={() => {
+                          setPickedAssets((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(a.id)) next.delete(a.id);
+                            else next.add(a.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <b>{a.name}</b>
+                      {a.description && <em>{a.description}</em>}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="incubate-tasks-head">
             <span className="field-label">任务清单（{plan.tasks.length} 个任务，可修改）</span>

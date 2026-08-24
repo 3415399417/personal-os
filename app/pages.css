@@ -2759,6 +2759,30 @@ li:hover > .task-focus { opacity: 1; }
   max-height: 55vh; overflow-y: auto;
 }
 .res-desc-lg { min-height: 160px; }
+.res-proj-tag {
+  font-size: 10px; color: var(--accent-deep); background: var(--accent-tint);
+  border-radius: var(--radius-pill); padding: 1px 7px; line-height: 1.6;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+}
+.res-cmd-meta { display: flex; align-items: center; gap: 6px; }
+/* ── 孵化推荐资产（勾选关联） ── */
+.incubate-assets {
+  display: flex; flex-direction: column; gap: 8px;
+  margin: 4px 0 10px; padding: 10px 12px;
+  background: var(--accent-tint); border: 1px solid var(--accent-light); border-radius: 10px;
+}
+.incubate-asset-group { display: flex; flex-direction: column; gap: 4px; }
+.incubate-asset-type { font-size: 11px; font-weight: 700; color: var(--accent-deep); }
+.incubate-asset {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 8px; cursor: pointer;
+  background: var(--white); border: 1px solid var(--border);
+  font-size: 12px;
+}
+.incubate-asset.picked { border-color: var(--accent); background: #F5F3FF; }
+.incubate-asset input { accent-color: var(--accent); margin: 0; flex: none; }
+.incubate-asset b { color: var(--fg); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.incubate-asset em { font-style: normal; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* ── 最近沉淀：类型标签 + 今日高亮（通用类，首页/详情页 note-item 共用） ── */
 .note-item .note-meta-row {
   display: inline-flex; align-items: center; gap: 6px;

@@ -142,8 +142,11 @@ export interface IncubatePlan {
   tasks: IncubateTask[];
 }
 
-/** 文档孵化：解析开发文档 → 生成计划（不落库，仅预览） */
-export async function incubatePlan(docText: string): Promise<IncubatePlan> {
+/** 文档孵化：解析开发文档 → 生成计划（不落库，仅预览）+ 推荐关联资产（指令/模板） */
+export async function incubatePlan(docText: string): Promise<{
+  plan: IncubatePlan;
+  assets: { commands: { id: string; name: string; description: string }[]; templates: { id: string; name: string; description: string }[] };
+}> {
   const resp = await fetch("/api/incubate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -153,15 +156,16 @@ export async function incubatePlan(docText: string): Promise<IncubatePlan> {
   if (!resp.ok || !d.ok) {
     throw new Error(d?.error ?? `HTTP ${resp.status}`);
   }
-  return d.plan as IncubatePlan;
+  return { plan: d.plan as IncubatePlan, assets: d.assets ?? { commands: [], templates: [] } };
 }
 
-/** 文档孵化：确认计划 → 事务创建项目 + 任务（返回项目，含新 id） */
+/** 文档孵化：确认计划 → 事务创建项目 + 任务（返回项目，含新 id）；resources 为勾选的关联资产 id */
 export function createProjectWithTasks(input: {
   name: string;
   desc?: string;
   folderPath?: string;
   tasks?: { title: string; description?: string; group?: TaskGroup; artifacts?: IncubateArtifact[] }[];
+  resources?: string[];
 }): Promise<{ project: Project; tasks: Task[] }> {
   return call<{ project: Project; tasks: Task[] }>("createProjectWithTasks", input);
 }
@@ -282,8 +286,8 @@ export function deleteInboxItem(id: string): Promise<void> {
   return call<void>("deleteInboxItem", { id });
 }
 
-/** 资源中心卡片：新建资源条目（url 供领域库存链接） */
-export function createResourceEntry(input: { name: string; type?: string; description?: string; url?: string }): Promise<{ id: string; name: string; type: string; time: string }> {
+/** 资源中心卡片：新建资源条目（url 供领域库存链接，projectId 关联项目） */
+export function createResourceEntry(input: { name: string; type?: string; description?: string; url?: string; projectId?: string | null }): Promise<{ id: string; name: string; type: string; time: string }> {
   return call("createResourceEntry", input);
 }
 
@@ -293,13 +297,23 @@ export function deleteLatestResourceEntry(type: string): Promise<{ deleted: stri
 }
 
 /** 按类型查资源（领域库/知识库/指令库/模板库子页面） */
-export function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string }[]> {
+export function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string; projectId: string | null; projectName: string }[]> {
   return call("getResources", { type });
 }
 
 /** 按 id 删除资源条目 */
 export function deleteResource(id: string): Promise<void> {
   return call("deleteResource", { id });
+}
+
+/** 项目关联资源（项目详情页“关联资产”区块） */
+export function getProjectResources(projectId: string): Promise<{ id: string; name: string; description: string; type: string; time: string }[]> {
+  return call("getProjectResources", { projectId });
+}
+
+/** 解绑资源与项目 */
+export function clearResourceProject(id: string): Promise<void> {
+  return call("clearResourceProject", { id });
 }
 
 /* ── /assets ── */

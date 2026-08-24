@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { Modal } from "@/components/common/Modal";
 import { createNote, createReview, createTask, deleteProject, deleteTask, getNotes, getProject, setProjectFocus, toggleTask, updateNote, updateProject } from "@/lib/api";
 import { confirmTask, getProgressEvents, getTaskArtifactStatus, listProjectFiles, updateTaskArtifacts } from "@/lib/api";
+import { clearResourceProject, getProjectResources } from "@/lib/api";
 import { useProjectScan } from "@/hooks/useProjectScan";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
 import type { Note, ProgressEventItem, Project, Task, TaskArtifact, TaskGroup } from "@/types";
@@ -65,6 +66,7 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [projResources, setProjResources] = useState<{ id: string; name: string; description: string; type: string; time: string }[]>([]);
   const [draft, setDraft] = useState("");
   const [draftGroup, setDraftGroup] = useState<TaskGroup>("doing");
   const [adding, setAdding] = useState(false);
@@ -118,6 +120,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     getProject(id).then(setProject);
     getNotes().then(setNotes);
+    getProjectResources(id).then(setProjResources).catch(() => {});
   }, [id]);
 
   const relatedNotes = useMemo(
@@ -409,6 +412,24 @@ export default function ProjectDetailPage() {
     status_changed: "状态变化",
     confirmed: "确认完成",
     manual: "手动",
+  };
+
+  const RES_TYPE_LABEL: Record<string, string> = {
+    domain: "领域",
+    knowledge: "知识",
+    command: "指令",
+    template: "模板",
+  };
+
+  /** 解绑关联资产 */
+  const unbindResource = (rid: string) => {
+    clearResourceProject(rid)
+      .then(() => {
+        window.dispatchEvent(new Event("betterlife:data-changed"));
+        return getProjectResources(id);
+      })
+      .then(setProjResources)
+      .catch(() => {});
   };
 
   const done = project.tasks.filter((t) => t.done).length;
@@ -872,6 +893,45 @@ export default function ProjectDetailPage() {
                 </button>
               )}
             </>
+          )}
+        </section>
+
+        {/* 关联资产：项目关联的领域/知识/指令/模板（AI 记忆器官的连接点） */}
+        <section className="panel">
+          <div className="panel-head">
+            <h2 className="panel-title">关联资产</h2>
+            <Link href="/resources/domain" className="btn-add" style={{ textDecoration: "none" }}>
+              去资源库添加 +
+            </Link>
+          </div>
+          {projResources.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0 8px", lineHeight: 1.6 }}>
+              还没有关联资产——在领域/知识/指令/模板库新建条目时选择本项目，或去资源库把已有资产关联过来。
+            </div>
+          ) : (
+            <ul className="note-list">
+              {projResources.map((r) => (
+                <li className="note-item" key={r.id}>
+                  <span className="badge">{RES_TYPE_LABEL[r.type] ?? r.type}</span>
+                  <div className="res-item-body">
+                    <b>{r.name}</b>
+                    {r.description && <em>{r.description.slice(0, 60)}</em>}
+                    <span className="res-item-time">{r.time}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="task-del"
+                    aria-label={`解除关联：${r.name}`}
+                    title="解除关联"
+                    onClick={() => unbindResource(r.id)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>

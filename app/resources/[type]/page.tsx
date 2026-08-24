@@ -7,7 +7,7 @@ import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
-import { createResourceEntry, deleteResource, getResources } from "@/lib/api";
+import { createResourceEntry, deleteResource, getProjects, getResources } from "@/lib/api";
 
 /** 资源子页面：领域库(去) / 知识库(读) / 指令库(抄) / 模板库(填)——四个不同视图，共用数据层 */
 
@@ -17,6 +17,8 @@ interface ResourceItem {
   description: string;
   url: string;
   time: string;
+  projectId: string | null;
+  projectName: string;
 }
 
 const TYPE_META: Record<string, { title: string; sub: string; empty: string }> = {
@@ -68,6 +70,12 @@ function CopyButton({ text, label = "复制" }: { text: string; label?: string }
   );
 }
 
+/** 关联项目小标签（资源归属显示） */
+function ProjTag({ name }: { name: string }) {
+  if (!name) return null;
+  return <span className="res-proj-tag" title={`关联项目：${name}`}>📁 {name}</span>;
+}
+
 /** 领域库：书签卡片 + 打开链接 */
 function DomainView({ items, onDelete }: { items: ResourceItem[]; onDelete: (id: string) => void }) {
   return (
@@ -86,7 +94,10 @@ function DomainView({ items, onDelete }: { items: ResourceItem[]; onDelete: (id:
           <h3 className="mini-card-title">{r.name}</h3>
           <p className="mini-card-desc">{r.description || "（未填写说明）"}</p>
           <div className="mini-card-foot">
-            <span className="mini-card-meta">{r.time}</span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+              <span className="mini-card-meta">{r.time}</span>
+              <ProjTag name={r.projectName} />
+            </span>
             <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {r.url && (
                 <a
@@ -150,7 +161,10 @@ function KnowledgeView({
               <div className="res-item-body">
                 <b>{r.name}</b>
                 {r.description && <em>{r.description.replace(/[#>*`\-\[\]]/g, "").slice(0, 80)}</em>}
-                <span className="res-item-time">{r.time}</span>
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span className="res-item-time">{r.time}</span>
+                  <ProjTag name={r.projectName} />
+                </span>
               </div>
               <button
                 type="button"
@@ -205,8 +219,11 @@ function CommandView({ items, onDelete }: { items: ResourceItem[]; onDelete: (id
             </span>
           </div>
           {r.description && <p className="res-cmd-use">{r.description.split("\n")[0].slice(0, 60) || "（无说明）"}</p>}
+          <div className="res-cmd-meta">
+            <span className="res-item-time">{r.time}</span>
+            <ProjTag name={r.projectName} />
+          </div>
           <pre className="res-cmd-body">{r.description || "（指令内容为空）"}</pre>
-          <span className="res-item-time">{r.time}</span>
         </article>
       ))}
     </div>
@@ -245,7 +262,10 @@ function TemplateView({
             <h3 className="mini-card-title">{r.name}</h3>
             <p className="mini-card-desc">{r.description ? r.description.split("\n")[0].slice(0, 50) : "（未填写）"}</p>
             <div className="mini-card-foot">
-              <span className="mini-card-meta">{r.time}</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                <span className="mini-card-meta">{r.time}</span>
+                <ProjTag name={r.projectName} />
+              </span>
               <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <button type="button" className="btn btn-soft res-tpl-preview" onClick={() => onView(r)}>预览</button>
                 <CopyButton text={r.description} label="复制模板" />
@@ -280,26 +300,35 @@ export default function ResourceTypePage() {
   const { type } = useParams<{ type: string }>();
   const meta = TYPE_META[type] ?? TYPE_META.domain;
   const [items, setItems] = useState<ResourceItem[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [url, setUrl] = useState("");
+  const [projectId, setProjectId] = useState<string>("");
   const [viewing, setViewing] = useState<ResourceItem | null>(null);
 
   useEffect(() => {
     load();
   }, [type]);
 
+  useEffect(() => {
+    getProjects()
+      .then((ps) => setProjects(ps.map((p) => ({ id: p.id, name: p.name }))))
+      .catch(() => {});
+  }, []);
+
   const load = () => getResources(type).then(setItems);
 
   const create = () => {
     const v = name.trim();
     if (!v) return;
-    createResourceEntry({ name: v, type, description: desc.trim(), url: url.trim() })
+    createResourceEntry({ name: v, type, description: desc.trim(), url: url.trim(), projectId: projectId || null })
       .then(() => {
         setName("");
         setDesc("");
         setUrl("");
+        setProjectId("");
         setModalOpen(false);
         window.dispatchEvent(new Event("betterlife:data-changed"));
         return load();
@@ -320,6 +349,7 @@ export default function ResourceTypePage() {
     setName("");
     setDesc("");
     setUrl("");
+    setProjectId("");
     setModalOpen(true);
   };
 
@@ -386,6 +416,15 @@ export default function ResourceTypePage() {
               <input id="rr-url" className="input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" maxLength={300} />
             </div>
           )}
+          <div className="field">
+            <label className="field-label" htmlFor="rr-proj">关联项目（可选）</label>
+            <select id="rr-proj" className="select" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              <option value="">不关联</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="field">
             <label className="field-label" htmlFor="rr-desc">
               {type === "knowledge" ? "内容" : type === "command" ? "指令内容" : type === "template" ? "模板内容" : "说明"}

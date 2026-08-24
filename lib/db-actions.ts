@@ -655,6 +655,8 @@ export async function createProjectWithTasks(input: {
   desc?: string;
   folderPath?: string;
   tasks?: IncubateTaskInput[];
+  /** 关联资源 id 列表（孵化时勾选的指令/模板等，创建后绑定到新项目） */
+  resources?: string[];
 }): Promise<{ project: Project; tasks: Task[] }> {
   const name = input.name.trim();
   if (!name) throw new Error("项目名不能为空");
@@ -686,6 +688,14 @@ export async function createProjectWithTasks(input: {
         },
       });
       created.push(toTask(row));
+    }
+    // 孵化勾选的资产 → 绑定到新项目（关联确认制的落库点）
+    const resourceIds = (input.resources ?? []).filter(Boolean);
+    if (resourceIds.length > 0) {
+      await tx.resource.updateMany({
+        where: { id: { in: resourceIds } },
+        data: { projectId: p.id },
+      });
     }
     return { project: p, tasks: created };
   });
@@ -860,10 +870,11 @@ export async function markInboxHandled(id: string, handled: boolean): Promise<vo
 /* ── 通用资源条目（资源中心卡片用；type: inbox/domain/template 等） ── */
 
 /** 按类型查资源（领域库/知识库/指令库/模板库等子页面用） */
-export async function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string }[]> {
+export async function getResources(type: string): Promise<{ id: string; name: string; description: string; url: string; time: string; projectId: string | null; projectName: string }[]> {
   const rows = await prisma.resource.findMany({
     where: { type },
     orderBy: { createdAt: "desc" },
+    include: { project: { select: { name: true } } },
   });
   return rows.map((r) => ({
     id: r.id,
@@ -871,7 +882,29 @@ export async function getResources(type: string): Promise<{ id: string; name: st
     description: r.description ?? "",
     url: r.url ?? "",
     time: formatTime(r.createdAt),
+    projectId: r.projectId ?? null,
+    projectName: r.project?.name ?? "",
   }));
+}
+
+/** 项目关联资源（项目详情页“关联资产”区块）：按类型分组 */
+export async function getProjectResources(projectId: string) {
+  const rows = await prisma.resource.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description ?? "",
+    type: r.type,
+    time: formatTime(r.createdAt),
+  }));
+}
+
+/** 解绑资源与项目（关联资产移除） */
+export async function clearResourceProject(id: string): Promise<void> {
+  await prisma.resource.update({ where: { id }, data: { projectId: null } });
 }
 
 /** 按 id 删除资源条目 */
@@ -884,6 +917,7 @@ export async function createResourceEntry(input: {
   type?: string;
   description?: string;
   url?: string;
+  projectId?: string | null;
 }): Promise<{ id: string; name: string; type: string; time: string }> {
   const r = await prisma.resource.create({
     data: {
@@ -891,6 +925,7 @@ export async function createResourceEntry(input: {
       type: input.type ?? "domain",
       description: input.description ?? "",
       url: input.url ?? "",
+      projectId: input.projectId ?? null,
       status: "open",
     },
   });

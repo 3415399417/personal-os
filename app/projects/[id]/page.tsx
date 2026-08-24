@@ -508,7 +508,7 @@ export default function ProjectDetailPage() {
             {project.desc}
           </p>
           <div className="progress-label">
-            <span>整体进度 · 任务 {done}/{total}</span>
+            <span>{total === 0 ? (project.status === "已完成" ? "历史项目 · 无任务" : "暂无任务") : `整体进度 · 任务 ${done}/${total}`}</span>
             <b className="num">{project.progress}%</b>
           </div>
           <div className="progress">
@@ -805,16 +805,24 @@ export default function ProjectDetailPage() {
             ))}
             {total === 0 && (
               <li style={{ padding: "8px 0" }}>
-                <EmptyState
-                  icon="task"
-                  title="还没有任务"
-                  sub="添加第一个任务，开始推进这个项目"
-                  actionLabel="新建任务"
-                  onAction={() => {
-                    setAdding(true);
-                    setDraft("");
-                  }}
-                />
+                {project.status === "已完成" ? (
+                  <EmptyState
+                    icon="project"
+                    title="已完成的历史项目"
+                    sub="没有任务列表——项目已经做完。可以写复盘沉淀经验、关联知识/指令/模板，或继续开发时再添加任务"
+                  />
+                ) : (
+                  <EmptyState
+                    icon="task"
+                    title="还没有任务"
+                    sub="添加第一个任务，开始推进这个项目"
+                    actionLabel="新建任务"
+                    onAction={() => {
+                      setAdding(true);
+                      setDraft("");
+                    }}
+                  />
+                )}
               </li>
             )}
           </ul>

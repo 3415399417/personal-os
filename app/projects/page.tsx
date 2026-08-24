@@ -145,7 +145,7 @@ export default function ProjectsPage() {
                 <div className="mini-card-foot">
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="progress-label">
-                      <span>任务 {done}/{total}</span>
+                      <span>{total === 0 ? "暂无任务" : `任务 ${done}/${total}`}</span>
                       <b className="num">{p.progress}%</b>
                     </div>
                     <div className="progress">

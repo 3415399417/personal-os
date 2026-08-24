@@ -75,11 +75,13 @@ export function toProject(row: {
   isTodayFocus?: boolean;
   updatedAt?: Date | null;
 }): Project {
+  // 已完成的项目即使没有任务列表（如导入的历史项目）也视为 100% 完成
+  const progress = row.status === "completed" && row.progress === 0 ? 100 : row.progress;
   return {
     id: row.id,
     name: row.name,
     desc: row.description,
-    progress: row.progress,
+    progress,
     status: (row.status === "active" ? "进行中" : row.status === "paused" ? "暂停" : row.status === "completed" ? "已完成" : "待开始") as Project["status"],
     stage: "",
     folderPath: row.folderPath ?? "",

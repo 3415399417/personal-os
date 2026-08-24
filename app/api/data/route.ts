@@ -32,6 +32,7 @@ const ACTIONS: Record<string, (payload: any) => Promise<unknown>> = {
   getProgressEvents: (p) => db.getProgressEvents(p.taskId),
   getProjectRecentEvent: (p) => db.getProjectRecentEvent(p.projectId),
   getTaskArtifactStatus: (p) => db.getTaskArtifactStatus(p.taskId),
+  listProjectFiles: (p) => db.listProjectFiles(p.projectId),
   getDevActivity: (p) => db.getDevActivity(p.since ? new Date(p.since) : new Date(Date.now() - 86400000)),
   deleteProject: async (p) => {
     // 级联删除项目任务（与确认弹窗文案一致：任务一并删除），避免 SetNull 后混入个人待办

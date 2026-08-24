@@ -78,6 +78,12 @@ export function ProjectsCard({
                 <span className="num">{p.progress}%</span>
               </Link>
               <ProgressBar value={`${p.progress}%`} />
+              {p.sense && (p.sense.ready > 0 || p.sense.doing > 0) && (
+                <span className="proj-sense">
+                  {p.sense.ready > 0 && <span className="sense-pill sense-pill-ready">🟡 {p.sense.ready} 待确认</span>}
+                  {p.sense.doing > 0 && <span className="sense-pill sense-pill-doing">🔵 {p.sense.doing} 开发中</span>}
+                </span>
+              )}
               {p.recentActivity && (
                 <span className="proj-activity" title={p.recentActivity.detail}>
                   ⚡ {p.recentActivity.time} · {p.recentActivity.detail}

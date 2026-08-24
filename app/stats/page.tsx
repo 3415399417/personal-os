@@ -11,6 +11,12 @@ interface StatsData {
   activeProjects: number;
   projects: { name: string; status: string; progress: number }[];
   lifeNotes: { date: string; content: string }[];
+  sense?: {
+    totalArtifacts: number;
+    matchedArtifacts: number;
+    hitRate: number;
+    pathFixes: number;
+  };
 }
 
 export default function StatsPage() {
@@ -97,6 +103,33 @@ export default function StatsPage() {
                   </ul>
                 )}
               </section>
+
+              {/* 进度感知（验证期出口标准） */}
+              {data.sense && data.sense.totalArtifacts > 0 && (
+                <section className="panel">
+                  <div className="panel-head">
+                    <h2 className="panel-title">进度感知</h2>
+                    <span className="badge">验证期出口标准：命中率 ≥ 90%</span>
+                  </div>
+                  <div className="stats-sense">
+                    <div className="stats-sense-main">
+                      <b className={data.sense.hitRate >= 90 ? "sense-hit-pass" : "sense-hit-warn"}>{data.sense.hitRate}%</b>
+                      <span>产物命中率</span>
+                      <em>已匹配 {data.sense.matchedArtifacts} / {data.sense.totalArtifacts} 个产物</em>
+                    </div>
+                    <div className="stats-sense-sub">
+                      <div className="stats-ov-card">
+                        <b>{data.sense.pathFixes}</b>
+                        <span>路径修正次数</span>
+                      </div>
+                      <div className="stats-ov-card">
+                        <b>{data.sense.totalArtifacts - data.sense.matchedArtifacts}</b>
+                        <span>未命中产物</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* 生活语录时间线 */}
               {data.lifeNotes.length > 0 && (

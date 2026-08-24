@@ -11,7 +11,10 @@ export interface Artifact {
 }
 
 /** 扫描时排除的目录（性能 + 噪音） */
-const EXCLUDED_DIRS = new Set(["node_modules", ".next", ".git", "dist", "build", "backup", ".vercel"]);
+const EXCLUDED_DIRS = new Set([
+  "node_modules", ".next", ".git", "dist", "build", "backup", ".vercel",
+  ".npm-cache", ".cache", ".tmp", ".idea", ".vscode", "coverage", "__pycache__",
+]);
 
 /** 归一化相对路径：反斜杠→正斜杠 + 小写（Windows 不区分大小写） */
 export function normalizeRel(p: string): string {

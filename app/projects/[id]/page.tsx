@@ -8,7 +8,7 @@ import { PageHead } from "@/components/common/PageHead";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Modal } from "@/components/common/Modal";
 import { createNote, createReview, createTask, deleteProject, deleteTask, getNotes, getProject, setProjectFocus, toggleTask, updateNote, updateProject } from "@/lib/api";
-import { confirmTask, getProgressEvents, getTaskArtifactStatus, updateTaskArtifacts } from "@/lib/api";
+import { confirmTask, getProgressEvents, getTaskArtifactStatus, listProjectFiles, updateTaskArtifacts } from "@/lib/api";
 import { useProjectScan } from "@/hooks/useProjectScan";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
 import type { Note, ProgressEventItem, Project, Task, TaskArtifact, TaskGroup } from "@/types";
@@ -91,6 +91,12 @@ export default function ProjectDetailPage() {
   const [artifactStatus, setArtifactStatus] = useState<{ root: string; artifacts: { type: string; path: string; matched: boolean; mtime: number | null }[] } | null>(null);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  // 一键修正产物路径：文件反选弹窗
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerRoot, setPickerRoot] = useState("");
+  const [pickerFiles, setPickerFiles] = useState<string[]>([]);
+  const [pickerFilter, setPickerFilter] = useState("");
+  const [pickerLoading, setPickerLoading] = useState(false);
 
   // 打开页面即扫 + 60s 轮询（进度感知）
   useProjectScan(id, (r) => {
@@ -327,6 +333,40 @@ export default function ProjectDetailPage() {
       })
       .catch(() => {});
   };
+
+  /* 一键修正产物路径：从实际文件反选 */
+
+  const openFilePicker = () => {
+    setPickerLoading(true);
+    setPickerOpen(true);
+    setPickerFilter("");
+    listProjectFiles(id)
+      .then((d) => {
+        setPickerRoot(d.root);
+        setPickerFiles(d.files);
+        if (!d.root) setScanNotice("项目未关联文件夹，无法列出实际文件");
+      })
+      .catch(() => setScanNotice("读取项目文件失败"))
+      .finally(() => setPickerLoading(false));
+  };
+
+  /** 点选文件 → 追加到产物草稿（已有同路径则跳过，file 类型） */
+  const pickFile = (rel: string) => {
+    const line = `file: ${rel}`;
+    const lines = artsDraft.split("\n").map((l) => l.trim()).filter(Boolean);
+    const exists = lines.some((l) => {
+      const m = l.match(/^(file|folder|glob)\s*[:：]\s*(.+)$/i);
+      return m && m[2].trim().replace(/\\/g, "/").toLowerCase() === rel.toLowerCase();
+    });
+    if (!exists) lines.push(line);
+    setArtsDraft(lines.join("\n"));
+    setPickerFilter("");
+    setPickerOpen(false);
+  };
+
+  const pickerFiltered = pickerFilter.trim()
+    ? pickerFiles.filter((f) => f.toLowerCase().includes(pickerFilter.trim().toLowerCase()))
+    : pickerFiles;
 
   const doConfirm = (t: Task) => {
     if (confirmingId) return;
@@ -693,6 +733,9 @@ export default function ProjectDetailPage() {
                       placeholder={"file: src/api/auth.ts\nfolder: src/services/auth/\nglob: tests/**"}
                     />
                     <div className="task-expand-actions">
+                      <button type="button" className="btn btn-soft" style={{ height: 24, fontSize: 11, padding: "0 10px" }} onClick={openFilePicker} title="从项目文件夹里点选真实存在的文件，替换猜错的路径">
+                        📂 从实际文件反选
+                      </button>
                       <button type="button" className="btn btn-soft" style={{ height: 24, fontSize: 11, padding: "0 10px" }} onClick={() => saveArts(t)}>
                         保存产物
                       </button>
@@ -953,6 +996,62 @@ export default function ProjectDetailPage() {
               <MarkdownPreview content={viewingNote?.content ?? ""} />
             </div>
           </div>
+        )}
+      </Modal>
+      {/* 从实际文件反选：文件选择弹窗 */}
+      <Modal
+        title="从实际文件反选"
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        foot={
+          <>
+            <button className="btn btn-soft" onClick={() => setPickerOpen(false)}>取消</button>
+          </>
+        }
+      >
+        {pickerLoading ? (
+          <div style={{ fontSize: 12, color: "var(--muted)", padding: "16px 0" }}>正在读取项目文件…</div>
+        ) : !pickerRoot ? (
+          <p style={{ fontSize: 12, color: "#B45309", lineHeight: 1.6 }}>
+            项目未关联文件夹，无法列出实际文件。请先在“项目概览”里设置项目位置。
+          </p>
+        ) : (
+          <>
+            <input
+              className="input file-picker-search"
+              autoFocus
+              value={pickerFilter}
+              onChange={(e) => setPickerFilter(e.target.value)}
+              placeholder="搜索文件名（如 auth、readme）…"
+              maxLength={60}
+            />
+            <div className="file-picker-root" title={pickerRoot}>{pickerRoot}</div>
+            <ul className="file-picker-list">
+              {pickerFiltered.length === 0 ? (
+                <li className="file-picker-empty">没有匹配的文件（共 {pickerFiles.length} 个）</li>
+              ) : (
+                pickerFiltered.slice(0, 200).map((f) => (
+                  <li key={f}>
+                    <button
+                      type="button"
+                      className="file-picker-item"
+                      title={`点击添加 file: ${f}`}
+                      onClick={() => pickFile(f)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="11" height="11">
+                        <path d="M6 4.5h9l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V6A1.5 1.5 0 0 1 6 4.5z" />
+                        <path d="M14 4.5V9h4" />
+                      </svg>
+                      {f}
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+            {pickerFiles.length > 200 && (
+              <div className="file-picker-note">显示前 200 条（共 {pickerFiles.length} 个文件），用搜索框过滤</div>
+            )}
+          </>
         )}
       </Modal>
       </div>

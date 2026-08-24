@@ -52,6 +52,8 @@ export interface Project {
   isTodayFocus?: boolean; // 今日焦点（与任务焦点互斥）
   updatedAt: string;
   recentActivity?: { detail: string; time: string }; // 最近一条进度事件（首页“最近活动”）
+  /** 进度感知徽标计数（首页项目卡）：待确认 / 开发中 */
+  sense?: { ready: number; doing: number };
   tasks: Task[];
   noteIds: string[];
 }

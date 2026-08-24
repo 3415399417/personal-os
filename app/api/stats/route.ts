@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getSenseStats } from "@/lib/db-actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** 统计看板数据：近 7 天完成曲线 / 笔记产出 / 项目进度 / 生活语录 */
+/** 统计看板数据：近 7 天完成曲线 / 笔记产出 / 项目进度 / 生活语录 / 进度感知 */
 export async function GET() {
   try {
     const since = new Date();
     since.setHours(0, 0, 0, 0);
     since.setDate(since.getDate() - 6);
 
-    const [tasks, notes, projects, lifeNotes] = await Promise.all([
+    const [tasks, notes, projects, lifeNotes, sense] = await Promise.all([
       prisma.task.findMany({
         where: { status: "completed", completedAt: { gte: since } },
         select: { completedAt: true },
@@ -19,6 +20,7 @@ export async function GET() {
       prisma.note.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
       prisma.project.findMany({ select: { name: true, status: true, progress: true } }),
       prisma.note.findMany({ where: { type: "life" }, orderBy: { createdAt: "desc" }, take: 10, select: { title: true, content: true, createdAt: true } }),
+      getSenseStats(),
     ]);
 
     // 按天分组（含今天）
@@ -55,6 +57,7 @@ export async function GET() {
         .filter((p) => p.status !== "archived")
         .map((p) => ({ name: p.name, status: p.status, progress: p.progress })),
       lifeNotes: lifeNotes.map((n) => ({ date: n.title, content: n.content })),
+      sense,
     });
   } catch (err) {
     console.error("[api/stats] failed:", err);

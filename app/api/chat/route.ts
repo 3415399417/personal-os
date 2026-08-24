@@ -354,6 +354,50 @@ const BASE_SYSTEM = `你是 BetterLife AI Personal OS 的智能协作助手。
 3. 删除类操作（delete_task/delete_project/delete_note）必须先用自然语言向用户确认：「确认删除「xxx」吗？回复确认后执行」，只有用户明确同意后才可以调用删除工具。
 4. 回答简洁、结构化、可执行，用中文（除非用户用其他语言）。`;
 
+/* ── 感知上下文注入：把进度感知引擎的实时状态告诉 AI（“系统看到了什么”） ── */
+
+async function buildSenseContext(): Promise<string> {
+  try {
+    const [pendingTasks, doingTasks, recentEvents] = await Promise.all([
+      prisma.task.findMany({
+        where: { readyForConfirm: true, status: { not: "completed" } },
+        select: { title: true, project: { select: { name: true } } },
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      }),
+      prisma.task.findMany({
+        where: { status: "doing", readyForConfirm: false },
+        select: { title: true, project: { select: { name: true } } },
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      }),
+      prisma.progressEvent.findMany({
+        where: { createdAt: { gte: new Date(Date.now() - 86400000) } },
+        select: { type: true, createdAt: true, task: { select: { title: true } } },
+      }),
+    ]);
+
+    const lines: string[] = [];
+    if (pendingTasks.length) {
+      lines.push(`待确认完成（产物已就位，等用户点确认）：${pendingTasks.map((t) => `「${t.title}」${t.project ? `(${t.project.name})` : ""}`).join("、")}`);
+    }
+    if (doingTasks.length) {
+      lines.push(`开发中（检测到文件变化）：${doingTasks.map((t) => `「${t.title}」${t.project ? `(${t.project.name})` : ""}`).join("、")}`);
+    }
+    const matched24h = recentEvents.filter((e) => e.type === "artifact_matched").length;
+    const confirmed24h = recentEvents.filter((e) => e.type === "confirmed").length;
+    const act: string[] = [];
+    if (matched24h) act.push(`${matched24h} 处产物更新`);
+    if (confirmed24h) act.push(`${confirmed24h} 个任务确认完成`);
+    if (act.length) lines.push(`最近 24 小时开发活动：${act.join("，")}`);
+
+    if (!lines.length) return "";
+    return `【开发进度感知（系统实时检测，非人工录入）】\n${lines.join("\n")}\n说明：以上是进度感知引擎检测到的实时状态；用户问"项目/任务现在什么情况"时优先引用，并提醒用户去确认待完成任务。`;
+  } catch {
+    return "";
+  }
+}
+
 /* ── 工具执行（直连 DB，不走 HTTP） ── */
 
 async function executeTool(name: string, args: any): Promise<{ result: unknown; notice?: string }> {
@@ -542,7 +586,8 @@ export async function POST(req: Request) {
   }
 
   const pageCtx = await buildPageContext(pathname);
-  const systemPrompt = `${BASE_SYSTEM}\n\n${pageCtx}`;
+  const senseCtx = await buildSenseContext();
+  const systemPrompt = `${BASE_SYSTEM}\n\n${pageCtx}\n${senseCtx}`;
 
   const toolResults: { name: string; notice?: string }[] = [];
   let finalContent = "";

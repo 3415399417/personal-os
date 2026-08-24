@@ -206,6 +206,11 @@ export function getTaskArtifactStatus(taskId: string): Promise<{ root: string; a
   return call("getTaskArtifactStatus", { taskId });
 }
 
+/** 项目实际文件列表（“从实际文件反选”用） */
+export function listProjectFiles(projectId: string): Promise<{ root: string; files: string[] }> {
+  return call("listProjectFiles", { projectId });
+}
+
 /* ── /notes ── */
 
 export function getNotes(): Promise<Note[]> {

@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/db";
-import { artifactMatches, fileMtimeMs, walkProject } from "@/lib/artifact-matcher";
+import { artifactMatches, fileMtimeMs, normalizeRel, walkProject } from "@/lib/artifact-matcher";
 import type { Artifact } from "@/lib/artifact-matcher";
 import type {
   Asset,
@@ -265,11 +265,19 @@ export async function getDashboard(): Promise<DashboardData> {
     execDone: doneCount,
     execTotal: total,
     execGroups,
-    projects: projectRows.map((p) => ({
-      ...toProject({ ...p, progress: p._progress }),
-      tasks: p._tasks.map(toTask),
-      recentActivity: recentMap.get(p.id) ?? undefined,
-    })),
+    projects: projectRows.map((p) => {
+      const ptasks = p._tasks.map(toTask);
+      return {
+        ...toProject({ ...p, progress: p._progress }),
+        tasks: ptasks,
+        recentActivity: recentMap.get(p.id) ?? undefined,
+        // 感知徽标：待确认（产物就位等确认）/ 开发中（doing 未就位）
+        sense: {
+          ready: ptasks.filter((t) => !t.done && t.readyForConfirm).length,
+          doing: ptasks.filter((t) => t.status === "doing" && !t.readyForConfirm).length,
+        },
+      };
+    }),
     resources: [
       { id: "r1", label: "收集箱", count: resources.filter((r) => r.type === "inbox" && r.status === "open").length, href: "/inbox" },
       { id: "r2", label: "领域库", count: resources.filter((r) => r.type === "domain").length, href: "/assets" },
@@ -1259,19 +1267,33 @@ export async function confirmTask(taskId: string, force = false) {
   return { task: updated ? toTask(updated) : null, event: ev };
 }
 
-/** 手动修正任务的产物路径（artifacts 字段 + description 尾部同步） */
+/** 手动修正任务的产物路径（artifacts 字段 + description 尾部同步）；内容有变化时记一条 manual 事件（路径修正次数统计用） */
 export async function updateTaskArtifacts(taskId: string, artifacts: Artifact[]) {
   const t = await prisma.task.findUnique({ where: { id: taskId } });
   if (!t) throw new Error("任务不存在");
   const valid = (Array.isArray(artifacts) ? artifacts : []).filter(
     (a) => a && ARTIFACT_TYPES.includes(a.type) && String(a.path ?? a.pattern ?? "").trim() !== "",
   );
+  // 新旧对比：确实有变化才写 manual 事件（避免保存未改动内容刷修正次数）
+  const oldArts = parseArtifactsJson(t.artifacts);
+  const changed =
+    oldArts.length !== valid.length ||
+    JSON.stringify(oldArts.map((a) => ({ t: a.type, p: a.path ?? a.pattern ?? "" }))) !==
+      JSON.stringify(valid.map((a) => ({ t: a.type, p: a.path ?? a.pattern ?? "" })));
   // description 去掉旧的【预期产物】段后重新拼接（保持双写一致）
   const desc = (t.description ?? "").replace(/【预期产物】[\s\S]*$/, "").trimEnd();
   await prisma.task.update({
     where: { id: taskId },
     data: { artifacts: JSON.stringify(valid), description: desc + serializeArtifacts(valid) },
   });
+  if (changed && t.projectId) {
+    await addProgressEvent({
+      taskId,
+      projectId: t.projectId,
+      type: "manual",
+      detail: "用户修正产物路径",
+    });
+  }
   const updated = await prisma.task.findUnique({ where: { id: taskId } });
   return updated ? toTask(updated) : null;
 }
@@ -1303,8 +1325,7 @@ export async function getProjectRecentEvent(projectId: string) {
 }
 
 /** 任务产物命中状态（展开区“还缺什么”）：文件存在性检查（不管 mtime，只回答“有没有”） */
-export async function getTaskArtifactStatus(taskId: string) {
-  const t = await prisma.task.findUnique({ where: { id: taskId } });
+export async function getTaskArtifactStatus(taskId: string) {  const t = await prisma.task.findUnique({ where: { id: taskId } });
   if (!t) throw new Error("任务不存在");
   const project = t.projectId ? await prisma.project.findUnique({ where: { id: t.projectId } }) : null;
   const root = (project?.folderPath ?? "").trim();
@@ -1325,6 +1346,25 @@ export async function getTaskArtifactStatus(taskId: string) {
   return { root, artifacts };
 }
 
+/** 项目实际文件列表（“从实际文件反选”用）：walkProject 结果，目录优先排序，最多 800 条 */
+export async function listProjectFiles(projectId: string) {
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) throw new Error("项目不存在");
+  const root = (project.folderPath ?? "").trim();
+  if (!root || !fs.existsSync(root)) return { root: "", files: [] };
+  const files = walkProject(root);
+  // 排序：根目录文件最前 → 普通目录文件 → 隐藏（. 开头）目录文件最后；同层按字母
+  files.sort((a, b) => {
+    const rank = (f: string) => {
+      if (!f.includes("/")) return 0; // 根文件
+      const first = f.split("/")[0];
+      return first.startsWith(".") ? 2 : 1;
+    };
+    return rank(a) - rank(b) || a.localeCompare(b);
+  });
+  return { root, files: files.slice(0, 1200) };
+}
+
 /** 开发活动统计（日报/周报用）：since 之后的产物更新 / 确认完成事件摘要 */
 export async function getDevActivity(since: Date) {
   const events = await prisma.progressEvent.findMany({
@@ -1341,5 +1381,26 @@ export async function getDevActivity(since: Date) {
     updateCount: matched.length,
     confirmedTasks: Array.from(new Set(confirmed.map((e) => e.task?.title ?? ""))).filter(Boolean).slice(0, 10),
     projects: Array.from(new Set(events.map((e) => e.task?.project?.name).filter(Boolean))) as string[],
+  };
+}
+
+/** 进度感知统计（验证期出口标准）：产物命中率 + 路径修正次数 */
+export async function getSenseStats() {
+  const [tasks, events] = await Promise.all([
+    prisma.task.findMany({ select: { artifacts: true } }),
+    prisma.progressEvent.findMany({ select: { type: true, path: true } }),
+  ]);
+  let total = 0;
+  for (const t of tasks) total += parseArtifactsJson(t.artifacts).length;
+  const matchedPaths = new Set(
+    events.filter((e) => e.type === "artifact_matched" && e.path).map((e) => normalizeRel(e.path)),
+  );
+  const pathFixes = events.filter((e) => e.type === "manual").length;
+  const matched = matchedPaths.size;
+  return {
+    totalArtifacts: total,
+    matchedArtifacts: matched,
+    hitRate: total > 0 ? Math.round((matched / total) * 100) : 0,
+    pathFixes,
   };
 }

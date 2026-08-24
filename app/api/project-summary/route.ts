@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     const noteLines = project.notes.map((n) => `- ${n.title}`).join("\n") || "- 无";
     const isCompleted = project.status === "completed";
 
-    const prompt = `请为项目「${project.name}」写一份简洁的项目总结（200 字以内），结构：\n一、项目概述（1-2 句，根据名称/任务/档案推断）\n二、完成情况（任务 ${done}/${total} 完成${isCompleted && total === 0 ? "——该项目已完成，未拆分任务列表，以项目档案为准" : ""}）\n三、沉淀成果（笔记要点，引用档案内容）\n四、一句话复盘建议\n要求：真实引用任务名和档案内容，不要编造细节；不要用 # 标题；若项目已完成，概述要肯定其完成状态。\n\n【任务清单】\n${taskLines}\n\n【笔记标题】\n${noteLines}\n${archiveNote ? `【项目档案全文】\n${(archiveNote.content ?? "").slice(0, 3000)}` : ""}`;
+    const prompt = `请为项目「${project.name}」写一份项目总结（400 字以内），结构：\n一、项目概述（2-3 句：做什么、核心能力）\n二、完成情况（有任务时写任务 X/Y 完成；无任务列表且项目已完成时写"项目已完成，依据项目档案"，不要提"任务 0/0"）\n三、亮点与沉淀（从档案/笔记中提炼真实亮点：技术方案、测试、部署、架构等细节）\n四、可复用经验（一句话：这个项目的模式/方案对后续项目有什么参考价值）\n要求：\n1. 只基于提供的任务/档案/笔记内容，不编造；内容不足写"（未在文档中说明）"\n2. 项目已完成，总结要肯定完成状态；不要输出"建议补充任务/拆解/记录"之类的建议——项目已经做完了\n3. 不要用 # 标题。\n\n【任务清单】\n${taskLines}\n\n【笔记标题】\n${noteLines}\n${archiveNote ? `【项目档案全文】\n${(archiveNote.content ?? "").slice(0, 3000)}` : ""}`;
 
     const res = await fetch(`${API_URL}/chat/completions`, {
       method: "POST",

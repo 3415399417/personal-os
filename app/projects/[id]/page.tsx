@@ -99,6 +99,8 @@ export default function ProjectDetailPage() {
   const [pickerFiles, setPickerFiles] = useState<string[]>([]);
   const [pickerFilter, setPickerFilter] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
+  // AI 项目档案
+  const [archiving, setArchiving] = useState(false);
 
   // 打开页面即扫 + 60s 轮询（进度感知）
   useProjectScan(id, (r) => {
@@ -433,7 +435,6 @@ export default function ProjectDetailPage() {
   };
 
   /** 生成项目档案（AI 读 README/代码 → 项目笔记） */
-  const [archiving, setArchiving] = useState(false);
   const makeArchive = () => {
     if (archiving) return;
     setArchiving(true);

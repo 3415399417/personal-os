@@ -326,6 +326,11 @@ export function importProjects(inputs: { name: string; folderPath: string; statu
   return call("importProjects", { inputs });
 }
 
+/** AI 生成项目档案：扫描 README/文档 → 总结存为关联项目的笔记 */
+export function generateProjectArchive(projectId: string): Promise<{ id: string; title: string; type: string; time: string }> {
+  return call("generateProjectArchive", { projectId });
+}
+
 /* ── /assets ── */
 
 export function getAssets(): Promise<Asset[]> {

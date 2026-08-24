@@ -7,7 +7,7 @@ import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { IncubateModal } from "@/components/common/IncubateModal";
-import { createProject, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
+import { createProject, generateProjectArchive, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
 import type { Project, ProjectStatus } from "@/types";
 
 const STATUSES: ProjectStatus[] = ["进行中", "待开始", "已完成", "暂停"];
@@ -33,6 +33,7 @@ export default function ProjectsPage() {
   const [dirs, setDirs] = useState<{ name: string; folderPath: string; imported: boolean }[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [importStatus, setImportStatus] = useState<"active" | "completed">("active");
+  const [genArchive, setGenArchive] = useState(true);
   const [importing, setImporting] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -49,6 +50,7 @@ export default function ProjectsPage() {
     setImportOpen(true);
     setPicked(new Set());
     setImportStatus("active");
+    setGenArchive(true);
     scanProjectsDir().then(setDirs).catch(() => {});
   };
 
@@ -66,9 +68,24 @@ export default function ProjectsPage() {
     if (targets.length === 0 || importing) return;
     setImporting(true);
     importProjects(targets.map((d) => ({ name: d.name, folderPath: d.folderPath, status: importStatus })))
-      .then(() => {
+      .then((created) => {
         setImportOpen(false);
         window.dispatchEvent(new Event("betterlife:data-changed"));
+        // 后台逐个生成项目档案（串行避免并发打爆 API；失败静默跳过）
+        if (genArchive && created.length > 0) {
+          const queue = [...created];
+          const next = () => {
+            const p = queue.shift();
+            if (!p) return;
+            generateProjectArchive(p.id)
+              .catch(() => {})
+              .finally(() => {
+                window.dispatchEvent(new Event("betterlife:data-changed"));
+                next();
+              });
+          };
+          next();
+        }
         return load();
       })
       .finally(() => setImporting(false));
@@ -145,7 +162,7 @@ export default function ProjectsPage() {
                 <div className="mini-card-foot">
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="progress-label">
-                      <span>{total === 0 ? "暂无任务" : `任务 ${done}/${total}`}</span>
+                      <span>任务 {done}/{total}</span>
                       <b className="num">{p.progress}%</b>
                     </div>
                     <div className="progress">
@@ -262,6 +279,15 @@ export default function ProjectsPage() {
             全选未导入
           </button>
         </div>
+        <label className="incubate-asset import-gen-archive" style={{ marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            checked={genArchive}
+            onChange={(e) => setGenArchive(e.target.checked)}
+          />
+          <b>✨ 自动生成项目档案</b>
+          <em>AI 读取 README/代码文档，总结成项目笔记（有真实依据，导入后后台生成，多个项目需几分钟）</em>
+        </label>
         <ul className="import-dir-list">
           {dirs.length === 0 ? (
             <li className="import-dir-empty">扫描中…</li>

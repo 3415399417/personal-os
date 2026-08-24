@@ -75,13 +75,11 @@ export function toProject(row: {
   isTodayFocus?: boolean;
   updatedAt?: Date | null;
 }): Project {
-  // 已完成的项目即使没有任务列表（如导入的历史项目）也视为 100% 完成
-  const progress = row.status === "completed" && row.progress === 0 ? 100 : row.progress;
   return {
     id: row.id,
     name: row.name,
     desc: row.description,
-    progress,
+    progress: row.progress,
     status: (row.status === "active" ? "进行中" : row.status === "paused" ? "暂停" : row.status === "completed" ? "已完成" : "待开始") as Project["status"],
     stage: "",
     folderPath: row.folderPath ?? "",
@@ -744,6 +742,86 @@ export async function importProjects(inputs: { name: string; folderPath: string;
     created.push(toProject({ ...p, progress: 0 }));
   }
   return created;
+}
+
+/**
+ * AI 生成项目档案（A 方案：导入的历史项目有真实依据的总结笔记）
+ * 扫描项目目录的 README/文档/package.json → DeepSeek 总结 → 存为关联项目的笔记
+ */
+export async function generateProjectArchive(projectId: string) {
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) throw new Error("项目不存在");
+  const root = (project.folderPath ?? "").trim();
+  if (!root || !fs.existsSync(root)) throw new Error("项目未关联文件夹，无法生成档案");
+
+  // 收集候选说明文件：README/文档/package.json 等（根目录优先，最多 4 个，每个 4000 字符）
+  const README_RE = /^(readme|readme\.md|readme\.txt|说明|项目说明|介绍)/i;
+  const candidates: { name: string; text: string }[] = [];
+  const pushFile = (p: string) => {
+    try {
+      if (!fs.statSync(p).isFile()) return;
+      const text = fs.readFileSync(p, "utf8").slice(0, 4000);
+      if (text.trim()) candidates.push({ name: path.basename(p), text });
+    } catch {
+      /* 忽略读不到的文件 */
+    }
+  };
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = fs.readdirSync(root, { withFileTypes: true });
+  } catch {
+    /* 目录不可读 */
+  }
+  const mdDocs: string[] = [];
+  for (const e of entries) {
+    if (!e.isFile()) continue;
+    if (README_RE.test(e.name)) pushFile(path.join(root, e.name));
+    else if (e.name === "package.json" || e.name === "requirements.txt" || e.name === "pyproject.toml" || e.name === "go.mod") pushFile(path.join(root, e.name));
+    else if (/\.(md|markdown|txt)$/i.test(e.name)) mdDocs.push(e.name);
+    if (candidates.length >= 2) break;
+  }
+  for (const n of mdDocs.slice(0, 2)) pushFile(path.join(root, n));
+  if (candidates.length === 0) throw new Error("未找到 README/文档，无法生成档案");
+
+  const material = candidates
+    .map((c) => `【${c.name}】\n${c.text}`)
+    .join("\n\n---\n\n")
+    .slice(0, 8000);
+
+  const API_URL = process.env.DEEPSEEK_API_URL ?? "https://api.deepseek.com";
+  const API_KEY = process.env.DSH_DEEPSEEK_KEY;
+  if (!API_KEY) throw new Error("未配置 DSH_DEEPSEEK_KEY");
+
+  const prompt = `你是项目档案整理员。根据下面这个已完成项目的真实文件内容，生成一份简洁的项目档案（Markdown 格式）。
+要求：
+1. 只根据提供的内容总结，**不要编造文件里没有的信息**；内容不足就写"（未在文档中说明）"
+2. 结构：\n# 项目概述\n\n## 技术栈\n\n## 核心功能\n\n## 实现要点\n\n## 使用方式\n3. 总长度 200-500 字，中文。\n\n项目名：${project.name}\n\n文件内容：\n${material}`;
+
+  const res = await fetch(`${API_URL}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${API_KEY}` },
+    body: JSON.stringify({
+      model: "deepseek-v4-flash",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1500,
+      temperature: 0.3,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`AI 服务错误 ${res.status}`);
+  const json = await res.json();
+  const summary = (json?.choices?.[0]?.message?.content ?? "").trim();
+  if (!summary) throw new Error("AI 返回为空");
+
+  const note = await prisma.note.create({
+    data: {
+      title: `${project.name} · 项目档案`,
+      content: summary,
+      type: "项目档案",
+      projectId: project.id,
+    },
+  });
+  return { id: note.id, title: note.title, type: note.type, time: formatTime(note.createdAt) };
 }
 
 /* ── 笔记 ── */

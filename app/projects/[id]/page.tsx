@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { Modal } from "@/components/common/Modal";
 import { createNote, createReview, createTask, deleteProject, deleteTask, getNotes, getProject, setProjectFocus, toggleTask, updateNote, updateProject } from "@/lib/api";
 import { confirmTask, getProgressEvents, getTaskArtifactStatus, listProjectFiles, updateTaskArtifacts } from "@/lib/api";
-import { clearResourceProject, getProjectResources } from "@/lib/api";
+import { clearResourceProject, getProjectResources, generateProjectArchive } from "@/lib/api";
 import { useProjectScan } from "@/hooks/useProjectScan";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
 import type { Note, ProgressEventItem, Project, Task, TaskArtifact, TaskGroup } from "@/types";
@@ -432,6 +432,26 @@ export default function ProjectDetailPage() {
       .catch(() => {});
   };
 
+  /** 生成项目档案（AI 读 README/代码 → 项目笔记） */
+  const [archiving, setArchiving] = useState(false);
+  const makeArchive = () => {
+    if (archiving) return;
+    setArchiving(true);
+    setScanNotice("正在生成项目档案…");
+    generateProjectArchive(id)
+      .then(() => {
+        setScanNotice("✅ 项目档案已生成，见下方项目笔记");
+        window.dispatchEvent(new Event("betterlife:data-changed"));
+        return getNotes();
+      })
+      .then(setNotes)
+      .catch((e: Error) => setScanNotice(e.message || "生成失败"))
+      .finally(() => {
+        setArchiving(false);
+        window.setTimeout(() => setScanNotice(null), 5000);
+      });
+  };
+
   const done = project.tasks.filter((t) => t.done).length;
   const total = project.tasks.length;
   const readyCount = project.tasks.filter((t) => !t.done && t.readyForConfirm).length;
@@ -508,7 +528,7 @@ export default function ProjectDetailPage() {
             {project.desc}
           </p>
           <div className="progress-label">
-            <span>{total === 0 ? (project.status === "已完成" ? "历史项目 · 无任务" : "暂无任务") : `整体进度 · 任务 ${done}/${total}`}</span>
+            <span>整体进度 · 任务 {done}/{total}</span>
             <b className="num">{project.progress}%</b>
           </div>
           <div className="progress">
@@ -805,24 +825,16 @@ export default function ProjectDetailPage() {
             ))}
             {total === 0 && (
               <li style={{ padding: "8px 0" }}>
-                {project.status === "已完成" ? (
-                  <EmptyState
-                    icon="project"
-                    title="已完成的历史项目"
-                    sub="没有任务列表——项目已经做完。可以写复盘沉淀经验、关联知识/指令/模板，或继续开发时再添加任务"
-                  />
-                ) : (
-                  <EmptyState
-                    icon="task"
-                    title="还没有任务"
-                    sub="添加第一个任务，开始推进这个项目"
-                    actionLabel="新建任务"
-                    onAction={() => {
-                      setAdding(true);
-                      setDraft("");
-                    }}
-                  />
-                )}
+                <EmptyState
+                  icon="task"
+                  title="还没有任务"
+                  sub="添加第一个任务，开始推进这个项目"
+                  actionLabel="新建任务"
+                  onAction={() => {
+                    setAdding(true);
+                    setDraft("");
+                  }}
+                />
               </li>
             )}
           </ul>
@@ -843,20 +855,31 @@ export default function ProjectDetailPage() {
         <section className="panel">
           <div className="panel-head">
             <h2 className="panel-title">项目笔记</h2>
-            <button
-              className="btn-add"
-              onClick={() => {
-                setNoteTitle("");
-                setNoteContent("");
-                setNoteType("笔记");
-                setNoteModalOpen(true);
-              }}
-            >
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M6 1v10M1 6h10" />
-              </svg>
-              新建笔记
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                type="button"
+                className="btn-add"
+                onClick={makeArchive}
+                disabled={archiving}
+                title="AI 读取项目 README/文档，总结成项目档案笔记"
+              >
+                {archiving ? "生成中…" : "✨ 生成档案"}
+              </button>
+              <button
+                className="btn-add"
+                onClick={() => {
+                  setNoteTitle("");
+                  setNoteContent("");
+                  setNoteType("笔记");
+                  setNoteModalOpen(true);
+                }}
+              >
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  <path d="M6 1v10M1 6h10" />
+                </svg>
+                新建笔记
+              </button>
+            </div>
           </div>
           {relatedNotes.length === 0 ? (
             <EmptyState icon="note" title="暂无关联笔记" sub="为这个项目写一篇笔记，沉淀过程与经验" actionLabel="新建笔记" onAction={() => setNoteModalOpen(true)} />

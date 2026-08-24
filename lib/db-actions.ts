@@ -933,7 +933,7 @@ export async function getReviews(): Promise<Review[]> {
   const reviews = await prisma.review.findMany({ orderBy: { createdAt: "desc" } });
   return reviews.map((r) => ({
     id: r.id,
-    title: r.period ? `${r.period}复盘` : "复盘",
+    title: r.title || (r.period ? `${r.period}复盘` : "复盘"),
     period: r.period || formatDate(r.createdAt),
     date: formatTime(r.createdAt),
     summary: r.summary,
@@ -953,6 +953,7 @@ export async function createReview(input: {
 }): Promise<Review> {
   const r = await prisma.review.create({
     data: {
+      title: input.title ?? "",
       period: input.period ?? formatDate(new Date()),
       summary: input.summary,
       achievements: input.wins ?? "",
@@ -962,7 +963,7 @@ export async function createReview(input: {
   });
   return {
     id: r.id,
-    title: input.title ?? `${r.period}复盘`,
+    title: r.title || `${r.period}复盘`,
     period: r.period,
     date: formatTime(r.createdAt),
     summary: r.summary,

@@ -208,7 +208,7 @@ export default function ProjectDetailPage() {
         .then((d) => {
           if (d.ok && d.summary) {
             return createReview({
-              title: `${project.name} · 项目总结`,
+              title: `${project.name} · ${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
               period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
               summary: d.summary,
             }).catch(() => {});

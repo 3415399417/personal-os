@@ -130,6 +130,7 @@ model Asset {
 // ── 复盘 ──
 model Review {
   id           String   @id @default(cuid())
+  title        String   @default("") // 复盘标题（项目总结=项目名+时间；日报/周报=周期复盘；空则显示层回退 period）
   period       String   @default("")
   summary      String   @default("")
   problems     String   @default("")

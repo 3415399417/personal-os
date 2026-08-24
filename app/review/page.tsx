@@ -6,7 +6,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
-import { createReview, getReviews, getRecentCompletedTasks } from "@/lib/api";
+import { createReview, deleteReview, getReviews, getRecentCompletedTasks } from "@/lib/api";
 import type { Review } from "@/types";
 
 interface RecentTask {
@@ -75,6 +75,20 @@ export default function ReviewPage() {
       .then(() => {
         setTitle(""); setSummary(""); setWins(""); setLosses(""); setNext("");
         setModalOpen(false);
+        return load();
+      })
+      .catch(() => {});
+  };
+
+  /** 删除复盘（用户手动清理重复/错误记录） */
+  const [confirmDel, setConfirmDel] = useState<Review | null>(null);
+  const doDelete = () => {
+    if (!confirmDel) return;
+    deleteReview(confirmDel.id)
+      .then(() => {
+        setConfirmDel(null);
+        setViewing(null);
+        window.dispatchEvent(new Event("betterlife:data-changed"));
         return load();
       })
       .catch(() => {});
@@ -190,6 +204,9 @@ export default function ReviewPage() {
         onClose={() => setViewing(null)}
         foot={
           <>
+            <button className="btn btn-danger" onClick={() => setConfirmDel(viewing)} style={{ marginRight: "auto" }}>
+              删除
+            </button>
             <button className="btn btn-soft" onClick={() => setViewing(null)}>关闭</button>
           </>
         }
@@ -241,8 +258,7 @@ export default function ReviewPage() {
 
       <Modal
         title="新建复盘"
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}        onClose={() => setModalOpen(false)}
         foot={
           <>
             <button className="btn btn-soft" onClick={() => setModalOpen(false)}>取消</button>
@@ -290,6 +306,23 @@ export default function ReviewPage() {
           <label className="field-label" htmlFor="rv-next">下一步（每行一条）</label>
           <textarea id="rv-next" className="textarea" style={{ minHeight: 56 }} value={next} onChange={(e) => setNext(e.target.value)} placeholder="明天/下周做什么？" />
         </div>
+      </Modal>
+
+      {/* 删除复盘确认 */}
+      <Modal
+        title="删除复盘"
+        open={!!confirmDel}
+        onClose={() => setConfirmDel(null)}
+        foot={
+          <>
+            <button className="btn btn-soft" onClick={() => setConfirmDel(null)}>取消</button>
+            <button className="btn btn-danger" onClick={doDelete}>删除</button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 12, color: "var(--fg)", lineHeight: 1.6 }}>
+          确认删除复盘「<b>{confirmDel?.title}</b>」？此操作不可恢复。
+        </p>
       </Modal>
       </div>
     </AppShell>

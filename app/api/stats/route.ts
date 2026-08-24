@@ -55,7 +55,7 @@ export async function GET() {
       activeProjects,
       projects: projects
         .filter((p) => p.status !== "archived")
-        .map((p) => ({ name: p.name, status: p.status, progress: p.progress })),
+        .map((p) => ({ name: p.name, status: p.status, progress: p.status === "completed" ? 100 : p.progress })),
       lifeNotes: lifeNotes.map((n) => ({ date: n.title, content: n.content })),
       sense,
     });

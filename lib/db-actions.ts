@@ -75,11 +75,13 @@ export function toProject(row: {
   isTodayFocus?: boolean;
   updatedAt?: Date | null;
 }): Project {
+  // 已完成的项目（标记完成 = 项目做完）无论是否有任务，进度都显示 100%
+  const progress = row.status === "completed" ? 100 : row.progress;
   return {
     id: row.id,
     name: row.name,
     desc: row.description,
-    progress: row.progress,
+    progress,
     status: (row.status === "active" ? "进行中" : row.status === "paused" ? "暂停" : row.status === "completed" ? "已完成" : "待开始") as Project["status"],
     stage: "",
     folderPath: row.folderPath ?? "",
@@ -753,6 +755,12 @@ export async function generateProjectArchive(projectId: string) {
   if (!project) throw new Error("项目不存在");
   const root = (project.folderPath ?? "").trim();
   if (!root || !fs.existsSync(root)) throw new Error("项目未关联文件夹，无法生成档案");
+
+  // 去重：已有同标题档案笔记则跳过，不重复生成
+  const dup = await prisma.note.findFirst({
+    where: { projectId: project.id, title: `${project.name} · 项目档案` },
+  });
+  if (dup) return { id: dup.id, title: dup.title, type: dup.type, time: formatTime(dup.createdAt), skipped: true };
 
   // 收集候选说明文件：README/文档/package.json 等（根目录优先，最多 4 个，每个 4000 字符）
   const README_RE = /^(readme|readme\.md|readme\.txt|说明|项目说明|介绍)/i;

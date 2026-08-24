@@ -417,17 +417,29 @@ async function executeTool(name: string, args: any): Promise<{ result: unknown; 
       };
     }
     case "get_tasks": {
-      let tasks = await db.getTodayTasks();
-      if (args.project_id) tasks = tasks.filter((t) => t.projectId === args.project_id);
+      // 全部任务（个人 + 项目），支持 project_id 过滤——项目任务必须能查到
+      const rows = await prisma.task.findMany({ orderBy: { createdAt: "asc" } });
+      let tasks = rows.map((t) => ({
+        id: t.id,
+        title: t.title,
+        group: t.group,
+        done: t.status === "completed",
+        status: t.status,
+        ready_for_confirm: t.readyForConfirm,
+        project_id: t.projectId,
+      }));
+      if (args.project_id) tasks = tasks.filter((t) => t.project_id === args.project_id);
       if (args.group) tasks = tasks.filter((t) => t.group === args.group);
       if (args.only_unfinished) tasks = tasks.filter((t) => !t.done);
       return {
         result: tasks.map((t) => ({
           id: t.id,
-          title: t.text,
+          title: t.title,
           group: t.group,
           done: t.done,
-          project_id: t.projectId ?? null,
+          status: t.status,
+          ready_for_confirm: t.ready_for_confirm,
+          project_id: t.project_id ?? null,
         })),
       };
     }

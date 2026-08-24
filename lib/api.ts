@@ -316,6 +316,16 @@ export function clearResourceProject(id: string): Promise<void> {
   return call("clearResourceProject", { id });
 }
 
+/** 扫描 E:\我的项目 历史项目目录（导入用） */
+export function scanProjectsDir(): Promise<{ name: string; folderPath: string; imported: boolean }[]> {
+  return call("scanProjectsDir");
+}
+
+/** 批量导入历史项目（只登记项目 + folderPath，不建任务） */
+export function importProjects(inputs: { name: string; folderPath: string; status?: string }[]): Promise<Project[]> {
+  return call("importProjects", { inputs });
+}
+
 /* ── /assets ── */
 
 export function getAssets(): Promise<Asset[]> {

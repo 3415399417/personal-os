@@ -62,6 +62,8 @@ const ACTIONS: Record<string, (payload: any) => Promise<unknown>> = {
   deleteResource: (p) => db.deleteResource(p.id),
   getProjectResources: (p) => db.getProjectResources(p.projectId),
   clearResourceProject: (p) => db.clearResourceProject(p.id),
+  scanProjectsDir: () => db.scanProjectsDir(),
+  importProjects: (p) => db.importProjects(p.inputs),
   getAssets: () => db.getAssets(),
   createAsset: (p) => db.createAsset(p),
   deleteAsset: (p) => prisma.asset.delete({ where: { id: p.id } }),

@@ -707,6 +707,43 @@ export async function createProjectWithTasks(input: {
   };
 }
 
+/* ── 历史项目导入（E:\我的项目 已完成项目批量登记，不拆任务） ── */
+
+/** 扫描历史项目根目录：列出子目录 + 是否已导入（按 folderPath/name 匹配） */
+export async function scanProjectsDir() {
+  const root = "E:\\我的项目";
+  const EXCLUDE = new Set(["personal-os", "测试项目"]); // 系统本体 / 测试目录不导入
+  const existing = await prisma.project.findMany({ select: { name: true, folderPath: true } });
+  const dirs = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !EXCLUDE.has(d.name))
+    .map((d) => ({ name: d.name, folderPath: path.join(root, d.name) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "zh"));
+  return dirs.map((d) => ({
+    ...d,
+    imported: existing.some((p) => p.folderPath === d.folderPath || p.name === d.name),
+  }));
+}
+
+/** 批量导入历史项目（只登记项目 + folderPath，不建任务） */
+export async function importProjects(inputs: { name: string; folderPath: string; status?: string }[]) {
+  const created = [];
+  for (const it of inputs) {
+    const name = (it.name ?? "").trim();
+    if (!name) continue;
+    const p = await prisma.project.create({
+      data: {
+        name,
+        description: "",
+        status: it.status === "completed" ? "completed" : "active",
+        folderPath: (it.folderPath ?? "").trim(),
+      },
+    });
+    created.push(toProject({ ...p, progress: 0 }));
+  }
+  return created;
+}
+
 /* ── 笔记 ── */
 
 export async function getNotes(): Promise<Note[]> {

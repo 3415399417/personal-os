@@ -7,7 +7,7 @@ import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { IncubateModal } from "@/components/common/IncubateModal";
-import { createProject, getProjects } from "@/lib/api";
+import { createProject, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
 import type { Project, ProjectStatus } from "@/types";
 
 const STATUSES: ProjectStatus[] = ["进行中", "待开始", "已完成", "暂停"];
@@ -29,6 +29,11 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [incubateOpen, setIncubateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [dirs, setDirs] = useState<{ name: string; folderPath: string; imported: boolean }[]>([]);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [importStatus, setImportStatus] = useState<"active" | "completed">("active");
+  const [importing, setImporting] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("进行中");
@@ -38,6 +43,36 @@ export default function ProjectsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  /** 打开导入弹窗：扫描 E:\我的项目 */
+  const openImport = () => {
+    setImportOpen(true);
+    setPicked(new Set());
+    setImportStatus("active");
+    scanProjectsDir().then(setDirs).catch(() => {});
+  };
+
+  const toggleDir = (name: string) => {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const importAll = () => {
+    const targets = dirs.filter((d) => !d.imported && picked.has(d.name));
+    if (targets.length === 0 || importing) return;
+    setImporting(true);
+    importProjects(targets.map((d) => ({ name: d.name, folderPath: d.folderPath, status: importStatus })))
+      .then(() => {
+        setImportOpen(false);
+        window.dispatchEvent(new Event("betterlife:data-changed"));
+        return load();
+      })
+      .finally(() => setImporting(false));
+  };
 
   const create = () => {
     const v = name.trim();
@@ -69,6 +104,13 @@ export default function ProjectsPage() {
             <path d="M6 1v10M1 6h10" />
           </svg>
           新建项目
+        </button>
+        <button className="btn btn-soft" onClick={openImport}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="12" height="12">
+            <path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9.5V18A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z" />
+            <path d="M12 11v6M9.5 14.5L12 17l2.5-2.5" />
+          </svg>
+          导入历史项目
         </button>
       </PageHead>
 
@@ -179,6 +221,75 @@ export default function ProjectsPage() {
             ))}
           </select>
         </div>
+      </Modal>
+      {/* 导入历史项目（E:\我的项目 已完成项目批量登记） */}
+      <Modal
+        title="导入历史项目"
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        style={{ width: 640, maxWidth: "94vw" }}
+        foot={
+          <>
+            <button className="btn btn-soft" onClick={() => setImportOpen(false)}>取消</button>
+            <button className="btn btn-primary" onClick={importAll} disabled={importing}>
+              {importing ? "导入中…" : `导入选中（${dirs.filter((d) => !d.imported && picked.has(d.name)).length}）`}
+            </button>
+          </>
+        }
+      >
+        <p className="incubate-hint">
+          扫描到 <b>E:\我的项目</b> 下 {dirs.length} 个目录（系统本体与测试目录已排除）。勾选要登记的已完成项目，只导入项目与文件夹路径，不拆分任务。
+        </p>
+        <div className="import-status-row">
+          <span className="field-label">导入后状态</span>
+          <div className="filter-tabs">
+            <button
+              type="button"
+              className={`filter-tab${importStatus === "active" ? " active" : ""}`}
+              onClick={() => setImportStatus("active")}
+            >
+              进行中
+            </button>
+            <button
+              type="button"
+              className={`filter-tab${importStatus === "completed" ? " active" : ""}`}
+              onClick={() => setImportStatus("completed")}
+            >
+              已完成
+            </button>
+          </div>
+          <button type="button" className="btn-add" onClick={() => setPicked(new Set(dirs.filter((d) => !d.imported).map((d) => d.name)))}>
+            全选未导入
+          </button>
+        </div>
+        <ul className="import-dir-list">
+          {dirs.length === 0 ? (
+            <li className="import-dir-empty">扫描中…</li>
+          ) : (
+            dirs.map((d) => {
+              const disabled = d.imported;
+              const checked = !disabled && picked.has(d.name);
+              return (
+                <li key={d.name} className={disabled ? "import-dir-item disabled" : "import-dir-item"}>
+                  <label
+                    className={`incubate-asset${checked ? " picked" : ""}`}
+                    style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggleDir(d.name)}
+                    />
+                    <b>{d.name}</b>
+                    <em title={d.folderPath}>{d.folderPath}</em>
+                    {disabled && <span className="badge done">已导入</span>}
+                  </label>
+                </li>
+              );
+            })
+          )}
+        </ul>
       </Modal>
       </div>
     </AppShell>

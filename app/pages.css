@@ -2645,18 +2645,6 @@ li:hover > .task-focus { opacity: 1; }
   display: block; margin-top: 4px; font-size: 10.5px; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* ── 首页项目卡感知徽标（通用类，禁止 data-od-id 覆盖） ── */
-.proj-sense {
-  display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap;
-}
-.sense-pill {
-  display: inline-flex; align-items: center;
-  font-size: 10px; font-weight: 600; line-height: 1;
-  border-radius: var(--radius-pill); padding: 3px 7px;
-  white-space: nowrap;
-}
-.sense-pill-ready { color: #92400E; background: #FEF3C7; border: 1px solid #FDE68A; }
-.sense-pill-doing { color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; }
 /* ── 项目详情页任务行：点行展开详情，点复选框勾选完成 ── */
 .task-item { cursor: pointer; }
 .task-item.open { background: var(--accent-tint); }

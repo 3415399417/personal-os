@@ -265,19 +265,11 @@ export async function getDashboard(): Promise<DashboardData> {
     execDone: doneCount,
     execTotal: total,
     execGroups,
-    projects: projectRows.map((p) => {
-      const ptasks = p._tasks.map(toTask);
-      return {
-        ...toProject({ ...p, progress: p._progress }),
-        tasks: ptasks,
-        recentActivity: recentMap.get(p.id) ?? undefined,
-        // 感知徽标：待确认（产物就位等确认）/ 开发中（doing 未就位）
-        sense: {
-          ready: ptasks.filter((t) => !t.done && t.readyForConfirm).length,
-          doing: ptasks.filter((t) => t.status === "doing" && !t.readyForConfirm).length,
-        },
-      };
-    }),
+    projects: projectRows.map((p) => ({
+      ...toProject({ ...p, progress: p._progress }),
+      tasks: p._tasks.map(toTask),
+      recentActivity: recentMap.get(p.id) ?? undefined,
+    })),
     resources: [
       { id: "r1", label: "收集箱", count: resources.filter((r) => r.type === "inbox" && r.status === "open").length, href: "/inbox" },
       { id: "r2", label: "领域库", count: resources.filter((r) => r.type === "domain").length, href: "/assets" },

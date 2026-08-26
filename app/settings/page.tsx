@@ -65,6 +65,15 @@ export default function SettingsPage() {
   const [shortcuts, setShortcuts] = useState<Record<string, string>>({});
   const [recording, setRecording] = useState<ShortcutId | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // 桌面通知开关（与 useDesktopNotifications 同源 localStorage；useEffect 加载避免 SSR 不一致）
+  const [desktopNotify, setDesktopNotify] = useState<boolean>(true);
+  useEffect(() => {
+    try {
+      setDesktopNotify(localStorage.getItem("personalos:desktop-notify") !== "false");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // 加载已保存资料 + 设置（资料存数据库，换浏览器不丢；设置存 localStorage）
   useEffect(() => {
@@ -331,6 +340,32 @@ export default function SettingsPage() {
                   aria-checked={settings.remind}
                   aria-label="系统提醒"
                   onClick={() => toggleSetting("remind")}
+                />
+              </div>
+              <div className="setting-row">
+                <div className="setting-info">
+                  <span className="setting-name">桌面通知</span>
+                  <span className="setting-desc">系统通知弹到桌面（即使你没打开页面也能看到）。为什么：到期提醒/日报生成会弹系统通知，第一次会请求浏览器授权。</span>
+                </div>
+                <button
+                  type="button"
+                  className={`switch${desktopNotify ? " on" : ""}`}
+                  role="switch"
+                  aria-checked={desktopNotify}
+                  aria-label="桌面通知"
+                  onClick={() => {
+                    const next = !desktopNotify;
+                    setDesktopNotify(next);
+                    try {
+                      localStorage.setItem("personalos:desktop-notify", next ? "true" : "false");
+                    } catch {
+                      /* ignore */
+                    }
+                    // 触发桌面通知权限请求（开启时）
+                    if (next && "Notification" in window && Notification.permission === "default") {
+                      Notification.requestPermission().catch(() => {});
+                    }
+                  }}
                 />
               </div>
             </div>

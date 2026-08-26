@@ -11,6 +11,7 @@ import { useUsageTimer } from "@/hooks/useUsageTimer";
 import { useGithubAutoCheck } from "@/hooks/useGithubAutoCheck";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { QuickCapture } from "@/components/common/QuickCapture";
+import { useDesktopNotifications } from "@/hooks/useDesktopNotifications";
 
 /** 全局设置：读取 localStorage 并应用到全局（如主题） */
 function useGlobalSettings() {
@@ -34,6 +35,7 @@ function useGlobalSettings() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   useGlobalSettings();
   useShortcuts();
+  useDesktopNotifications();
   // 学习时长计时（打开系统即计时）
   useUsageTimer();
   // GitHub 情报自动检测（每日首次 + 每 6 小时）

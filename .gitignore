@@ -36,3 +36,6 @@ backup/
 _verify/*.png
 _verify/*.log
 _verify/review-shots/
+
+# 开发服务器日志
+dev-server.log

@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { PageHead } from "@/components/common/PageHead";
 import { AvatarCropper } from "@/components/common/AvatarCropper";
 import { Modal } from "@/components/common/Modal";
-import { clearAllNotifications, getProfile, saveProfile } from "@/lib/api";
+import { clearAllNotifications, getProfile, saveProfile, listBackups, restoreBackup } from "@/lib/api";
+import type { BackupInfo } from "@/lib/api";
 import { SHORTCUT_ACTIONS, loadShortcuts, saveShortcuts, formatPressedKeys } from "@/hooks/useShortcuts";
 import type { ShortcutId } from "@/hooks/useShortcuts";
 
@@ -61,6 +62,11 @@ export default function SettingsPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  // 数据还原
+  const [backups, setBackups] = useState<BackupInfo[]>([]);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreMsg, setRestoreMsg] = useState("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shortcuts, setShortcuts] = useState<Record<string, string>>({});
   const [recording, setRecording] = useState<ShortcutId | null>(null);
@@ -226,6 +232,66 @@ export default function SettingsPage() {
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>
               此操作将<strong>永久删除</strong>通知中心里的全部通知记录（备份、GitHub 情报、提醒等），且不可恢复。
             </p>
+          </Modal>
+
+          {/* 数据还原弹窗 */}
+          <Modal
+            title="从备份还原"
+            open={restoreOpen}
+            onClose={() => setRestoreOpen(false)}
+            foot={
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button type="button" className="btn btn-soft" onClick={() => setRestoreOpen(false)}>关闭</button>
+              </div>
+            }
+          >
+            {restoreMsg && (
+              <div style={{ fontSize: 12, lineHeight: 1.6, padding: "8px 10px", borderRadius: 8, background: "var(--accent-tint)", color: "var(--accent)", marginBottom: 8 }}>
+                {restoreMsg}
+              </div>
+            )}
+            {backups.length === 0 && !restoreMsg && (
+              <p style={{ margin: 0, fontSize: 12.5, color: "var(--muted)" }}>暂无可用备份</p>
+            )}
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, maxHeight: 300, overflowY: "auto" }}>
+              {backups.map((b) => (
+                <li
+                  key={b.file}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: "8px 4px",
+                    borderTop: "1px solid var(--border)",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>{b.time}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--muted)" }}>{b.file} · {b.sizeKB} KB</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    style={{ height: 26, fontSize: 11.5, padding: "0 10px", flexShrink: 0 }}
+                    disabled={restoring}
+                    onClick={() => {
+                      if (!confirm(`确认还原到 ${b.time} 的备份？当前数据会先备份为 dev.db.pre-restore。`)) return;
+                      setRestoring(true);
+                      setRestoreMsg("");
+                      restoreBackup(b.file)
+                        .then((d) => {
+                          setRestoreMsg(`✅ ${d.note}`);
+                        })
+                        .catch((e) => setRestoreMsg(`❌ 还原失败：${e.message}`))
+                        .finally(() => setRestoring(false));
+                    }}
+                  >
+                    {restoring ? "还原中…" : "还原"}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </Modal>
 
           <section className="panel">
@@ -441,6 +507,9 @@ export default function SettingsPage() {
                 <a className="btn btn-soft" style={{ height: 30, fontSize: 12, padding: "0 14px" }} href="/api/export">
                   导出 JSON
                 </a>
+                <a className="btn btn-soft" style={{ height: 30, fontSize: 12, padding: "0 14px" }} href="/api/export-md">
+                  导出 Markdown
+                </a>
               </div>
               <div className="setting-row">
                 <div className="setting-info">
@@ -455,6 +524,25 @@ export default function SettingsPage() {
                   disabled={backupLoading}
                 >
                   {backupLoading ? "备份中…" : "立即备份"}
+                </button>
+              </div>
+              <div className="setting-row" style={{ borderTop: "1px dashed var(--border)", marginTop: 4, paddingTop: 12 }}>
+                <div className="setting-info">
+                  <span className="setting-name">从备份还原</span>
+                  <span className="setting-desc">从 backup 目录恢复数据库（还原前会自动备份当前库为 dev.db.pre-restore）</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-soft"
+                  style={{ height: 30, fontSize: 12, padding: "0 14px" }}
+                  onClick={() => {
+                    listBackups().then((bs) => {
+                      setBackups(bs);
+                      setRestoreOpen(true);
+                    }).catch(() => setBackupInfo("加载备份列表失败"));
+                  }}
+                >
+                  选择备份
                 </button>
               </div>
               <div className="setting-row" style={{ borderTop: "1px dashed var(--border)", marginTop: 4, paddingTop: 12 }}>

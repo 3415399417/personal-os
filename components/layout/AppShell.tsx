@@ -11,6 +11,7 @@ import { useUsageTimer } from "@/hooks/useUsageTimer";
 import { useGithubAutoCheck } from "@/hooks/useGithubAutoCheck";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { QuickCapture } from "@/components/common/QuickCapture";
+import { ClipboardCapture } from "@/components/common/ClipboardCapture";
 import { useDesktopNotifications } from "@/hooks/useDesktopNotifications";
 
 /** 全局设置：读取 localStorage 并应用到全局（如主题） */
@@ -94,6 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="app">
       <Sidebar ref={sidebarRef} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <QuickCapture />
+      <ClipboardCapture />
       <div className="main">
         <Header onMenuClick={() => setDrawerOpen((v) => !v)} />
         <main className="content">{children}</main>

@@ -491,3 +491,29 @@ export async function saveProfile(profile: UserProfile): Promise<UserProfile> {
   if (!d?.ok) throw new Error(d?.error || "保存个人资料失败");
   return d.profile as UserProfile;
 }
+
+/* ── 数据还原（备份恢复）── */
+
+export interface BackupInfo {
+  file: string;
+  time: string;
+  sizeKB: number;
+}
+
+export async function listBackups(): Promise<BackupInfo[]> {
+  const resp = await fetch("/api/restore");
+  const d = await resp.json();
+  if (!d?.ok) throw new Error(d?.error || "加载备份列表失败");
+  return d.backups as BackupInfo[];
+}
+
+export async function restoreBackup(file: string): Promise<{ note: string }> {
+  const resp = await fetch("/api/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file }),
+  });
+  const d = await resp.json();
+  if (!d?.ok) throw new Error(d?.error || "还原失败");
+  return d;
+}

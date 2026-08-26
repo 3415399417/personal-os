@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createInboxItem, createTask } from "@/lib/api";
-
 /**
  * 快速捕捉框：Ctrl+Shift+I 唤起，输入一句回车即入收件箱。
  * 前缀路由：
@@ -34,6 +33,17 @@ export function QuickCapture() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
+
+  // 桌面壳全局快捷键（Tauri 系统级 Ctrl+Shift+I，跨应用生效）：收到事件即打开
+  useEffect(() => {
+    const onOpen = () => {
+      setOpen(true);
+      setText("");
+      setHint("");
+    };
+    window.addEventListener("betterlife:open-capture", onOpen);
+    return () => window.removeEventListener("betterlife:open-capture", onOpen);
+  }, []);
 
   // 打开时聚焦输入框
   useEffect(() => {

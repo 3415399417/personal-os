@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createReminder, createTodo, deleteReminder, deleteTodo, getDashboard, getTodos, toggleTodo, updateReminderStatus } from "@/lib/api";
 import { Modal } from "@/components/common/Modal";
 import type { DashboardData, Reminder, SidebarTodo } from "@/types";
@@ -621,7 +622,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
           把生活与工作，<b>过成作品</b>
         </p>
         <div className="foot-icons">
-          <a className="icon-btn" href="/space" aria-label="个人空间" title="个人空间">
+          <Link className="icon-btn" href="/space" aria-label="个人空间" title="个人空间">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -633,8 +634,8 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
               <circle cx="12" cy="8" r="3.6" />
               <path d="M4.5 20c1.2-3.6 4-5.2 7.5-5.2s6.3 1.6 7.5 5.2" />
             </svg>
-          </a>
-          <a className="icon-btn" href="/settings" aria-label="设置" title="设置">
+          </Link>
+          <Link className="icon-btn" href="/settings" aria-label="设置" title="设置">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -646,7 +647,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
               <circle cx="12" cy="12" r="3.2" />
               <path d="M19 12a7 7 0 0 0-.14-1.4l2-1.56-2-3.46-2.36.96A7 7 0 0 0 14.7 5L14.4 2.4h-4L10 5a7 7 0 0 0-1.8 1.06L5.84 5.1l-2 3.46 2 1.56A7 7 0 0 0 5 12c0 .48.05.95.14 1.4l-2 1.56 2 3.46 2.36-.96A7 7 0 0 0 9.3 19l.3 2.6h4l.3-2.6a7 7 0 0 0 1.8-1.06l2.36.96 2-3.46-2-1.56c.09-.45.14-.92.14-1.4z" />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
     </aside>

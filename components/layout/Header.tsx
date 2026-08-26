@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getNotificationsForBell, markAllNotificationsRead, deleteNotification, clearAllNotifications } from "@/lib/api";
 import type { BellNotification } from "@/lib/api";
@@ -193,15 +194,16 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
         <nav className="topnav" aria-label="主导航">
           {NAV_ITEMS.map((item) => (
-            <a
+            <Link
               key={item.key}
               className={`nav-link${pathname === item.href ? " active" : ""}`}
               href={item.href}
               data-od-id={`nav-${item.key}`}
+              prefetch
             >
               <NavIcon name={item.key} />
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="topbar-right">
@@ -372,7 +374,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               )}
             </div>
           </div>
-          <a className="avatar" href="/space" aria-label="个人空间" title="个人空间">
+          <Link className="avatar" href="/space" aria-label="个人空间" title="个人空间">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -384,7 +386,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <circle cx="12" cy="8.5" r="3.4" />
               <path d="M4.8 20c1.2-3.4 3.9-5 7.2-5s6 1.6 7.2 5" />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
     </header>

@@ -12,6 +12,7 @@ import { QuickCard } from "@/components/dashboard/QuickCard";
 import { AiCard } from "@/components/dashboard/AiCard";
 import { AssetsCard } from "@/components/dashboard/AssetsCard";
 import { getDashboard } from "@/lib/api";
+import { useCached } from "@/hooks/useCached";
 import type { DashboardData } from "@/types";
 
 /**
@@ -19,10 +20,9 @@ import type { DashboardData } from "@/types";
  * Hero → grid-row（今日执行/当前项目/资源中心）→ grid-row（学习/沉淀/生活）→ grid-row（工作台/AI/资产库）
  */
 export function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  // 缓存秒开：切回首页直接显示缓存，后台静默刷新（betterlife:data-changed 时强制刷新）
+  const { data, reload } = useCached<DashboardData | null>("dashboard:data", () => getDashboard(), 30_000);
   const [streak, setStreak] = useState(0);
-
-  const reload = () => getDashboard().then(setData);
 
   // 连续使用天数（Hero 右上角徽章）：来自 /api/space
   const loadStreak = () => {
@@ -35,7 +35,6 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    reload();
     loadStreak();
     // 全局数据变更事件：侧边栏/其他页面操作后实时刷新首页卡片（无需手动刷新页面）
     const onDataChanged = () => {
@@ -44,7 +43,7 @@ export function Dashboard() {
     };
     window.addEventListener("betterlife:data-changed", onDataChanged);
     return () => window.removeEventListener("betterlife:data-changed", onDataChanged);
-  }, []);
+  }, [reload]);
 
   return (
     <div className="page">

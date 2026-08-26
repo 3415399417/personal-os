@@ -3011,3 +3011,13 @@ li:hover > .task-focus { opacity: 1; }
   font-size: 12px;
   font-weight: 700;
 }
+/* ═══ 路由切换：骨架屏 shimmer + 页面淡入 ═══ */
+@keyframes betterlife-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes betterlife-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.betterlife-route-enter { animation: betterlife-fadein .18s ease-out; }

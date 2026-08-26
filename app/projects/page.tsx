@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
+import { useCached } from "@/hooks/useCached";
 import { IncubateModal } from "@/components/common/IncubateModal";
 import { createProject, generateProjectArchive, generateProjectReview, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
 import type { Project, ProjectStatus } from "@/types";
@@ -39,6 +40,11 @@ export default function ProjectsPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("进行中");
+  // 缓存秒开：切回本页直接显示旧数据再静默刷新
+  const cachedProjects = useCached<Project[]>("projects:list", () => getProjects(), 30_000);
+  useEffect(() => {
+    if (cachedProjects.data) setProjects(cachedProjects.data);
+  }, [cachedProjects.data]);
 
   const load = () => getProjects().then(setProjects);
 

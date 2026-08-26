@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PageHead } from "@/components/common/PageHead";
 import { useGreeting } from "@/hooks/useGreeting";
+import { useCached } from "@/hooks/useCached";
 import { createTask, deleteTask, getCarryoverTasks, getDashboard, getPlanStats, getProjects, getTodayTasks, setProjectFocus, setTaskFocus, toggleTask } from "@/lib/api";
 import type { DashboardData, Project, Task, TaskGroup } from "@/types";
 
@@ -56,13 +57,27 @@ export default function TodayPage() {
   const [carryover, setCarryover] = useState<{ id: string; title: string; group: string; projectName: string }[]>([]);
   const [hint, setHint] = useState("");
   const [hintLoading, setHintLoading] = useState(false);
+  // 缓存秒开：首次进入后数据进缓存，切回本页时直接显示旧数据再静默刷新
+  const cachedTasks = useCached<Task[]>("today:tasks", () => getTodayTasks(), 20_000);
+  const cachedProjects = useCached<Project[]>("today:projects", () => getProjects(), 60_000);
+  const cachedFocus = useCached<DashboardData["focus"] | null>("today:focus", () => getDashboard().then((d) => d.focus), 20_000);
+
+  // 缓存命中 → 先渲染缓存数据（秒开），随后真实加载会覆盖
+  useEffect(() => {
+    if (cachedTasks.data) setTasks(cachedTasks.data);
+  }, [cachedTasks.data]);
+  useEffect(() => {
+    if (cachedProjects.data) setProjects(cachedProjects.data);
+  }, [cachedProjects.data]);
+  useEffect(() => {
+    if (cachedFocus.data) setFocusData(cachedFocus.data);
+  }, [cachedFocus.data]);
   const [planStats, setPlanStats] = useState<{ createdToday: number; doneToday: number; carryover: number; total: number; rate: number } | null>(null);
   const greeting = useGreeting();
   const taskAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    load();
-    getProjects().then(setProjects);
+    // 任务/项目/焦点由 useCached 自动加载（含缓存秒开），这里只加载剩余数据
     getCarryoverTasks(3).then(setCarryover).catch(() => {});
     getPlanStats().then(setPlanStats).catch(() => {});
     setHintLoading(true);

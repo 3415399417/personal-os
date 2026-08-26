@@ -29,6 +29,23 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
     });
   }, []);
 
+  // ── 设置开关：每日问候 / 系统提醒（设置页可关）──
+  const [prefs, setPrefs] = useState<{ daily: boolean; remind: boolean }>({ daily: true, remind: true });
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = localStorage.getItem("personalos:settings");
+        const s = raw ? JSON.parse(raw) : {};
+        setPrefs({ daily: s.daily !== false, remind: s.remind !== false });
+      } catch {
+        setPrefs({ daily: true, remind: true });
+      }
+    };
+    read();
+    window.addEventListener("betterlife:settings-changed", read);
+    return () => window.removeEventListener("betterlife:settings-changed", read);
+  }, []);
+
   // ── 待办：数据库持久化 ──
   const [todos, setTodos] = useState<SidebarTodo[]>([]);
   const [adding, setAdding] = useState(false);
@@ -156,6 +173,17 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
       .catch(notify);
   };
 
+  // 待办分组：今日（新添加在上）/ 已过期（下方红色提醒）/ 已完成（沉底）
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayTodos = todos.filter((t) => !t.done && t.createdDate === todayKey);
+  const overdueTodos = todos.filter((t) => !t.done && !!t.createdDate && t.createdDate < todayKey);
+  const doneTodos = todos.filter((t) => t.done);
+  const doneToday = todos.filter((t) => t.done && t.createdDate === todayKey).length;
+  const todayTotal = todos.filter((t) => t.createdDate === todayKey).length;
+  const overdueDays = (d?: string) =>
+    d ? Math.max(1, Math.round((Date.now() - new Date(`${d}T00:00:00`).getTime()) / 86400000)) : 0;
+
   return (
     <aside ref={ref} className={`sidebar${open ? " open" : ""}`} data-od-id="sidebar">
       {/* 品牌区 */}
@@ -181,7 +209,8 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
       </div>
 
       <div className="sidebar-scroll">
-        {/* 日期问候 */}
+        {/* 日期问候（设置：每日问候开关控制） */}
+        {prefs.daily && (
         <section className="greet-card" data-od-id="sidebar-greeting">
           <div className="greet-text">
             <div className="greet-top">
@@ -214,6 +243,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
             </svg>
           </div>
         </section>
+        )}
 
         {/* 今日状态 */}
         <section className="side-card side-stats" data-od-id="sidebar-stats">
@@ -242,7 +272,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
           </div>
         </section>
 
-        {/* 待办事项 */}
+        {/* 待办事项：今日 / 已过期（红色提醒）/ 已完成 */}
         <section className="side-card side-todos" data-od-id="sidebar-todos">
           <div className="side-head">
             <h2 className="side-title">待办事项</h2>
@@ -263,61 +293,165 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
               新建
             </button>
           </div>
-          <ul className="todo-list">
-            {todos.map((todo) => (
-              <li key={todo.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <button
-                  type="button"
-                  className={`todo-item${todo.done ? " done" : ""}`}
-                  role="checkbox"
-                  aria-checked={todo.done}
-                  aria-label={`${todo.done ? "取消完成：" : "标记完成："}${todo.text}`}
-                  onClick={() => toggle(todo.id, !todo.done)}
-                >
-                  <span className="todo-check">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 12.5l4.5 4.5L19 7" />
-                    </svg>
-                  </span>
-                  <span className="todo-text">{todo.text}</span>
-                </button>
-                <button
-                  type="button"
-                  className="task-del"
-                  aria-label={`删除待办：${todo.text}`}
-                  title="删除待办"
-                  onClick={() => remove(todo.id)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
-                  </svg>
-                </button>
-              </li>
-            ))}
-            {todos.length === 0 && (
+
+          {todos.length === 0 && (
+            <ul className="todo-list">
               <li className="task-empty" style={{ padding: "14px 8px", textAlign: "center" }}>
                 <span style={{ color: "var(--muted)", fontSize: 11 }}>暂无待办，点击「新建」添加</span>
               </li>
-            )}
-          </ul>
-          {/* 待办进度条：已完成待办 ÷ 总待办 */}
-          {todos.length > 0 && (
+            </ul>
+          )}
+
+          {/* 今日：新添加的在上（后端已倒序） */}
+          {todayTodos.length > 0 && (
+            <div className="todo-group">
+              <div className="todo-group-title">📌 今日</div>
+              <ul className="todo-list">
+                {todayTodos.map((todo) => (
+                  <li key={todo.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <button
+                      type="button"
+                      className={`todo-item${todo.done ? " done" : ""}`}
+                      role="checkbox"
+                      aria-checked={todo.done}
+                      aria-label={`${todo.done ? "取消完成：" : "标记完成："}${todo.text}`}
+                      onClick={() => toggle(todo.id, !todo.done)}
+                    >
+                      <span className="todo-check">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12.5l4.5 4.5L19 7" />
+                        </svg>
+                      </span>
+                      <span className="todo-text">{todo.text}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="task-del"
+                      aria-label={`删除待办：${todo.text}`}
+                      title="删除待办"
+                      onClick={() => remove(todo.id)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 已过期：在下方，红色提醒 + 过期天数 */}
+          {overdueTodos.length > 0 && (
+            <div className="todo-group">
+              <div className="todo-group-title overdue">🔥 已过期（{overdueTodos.length}）</div>
+              <ul className="todo-list">
+                {overdueTodos.map((todo) => (
+                  <li key={todo.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <button
+                      type="button"
+                      className="todo-item overdue"
+                      role="checkbox"
+                      aria-checked={false}
+                      aria-label={`标记完成：${todo.text}`}
+                      onClick={() => toggle(todo.id, true)}
+                    >
+                      <span className="todo-check">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12.5l4.5 4.5L19 7" />
+                        </svg>
+                      </span>
+                      <span className="todo-text">{todo.text}</span>
+                      <span className="todo-overdue-tag">过期 {overdueDays(todo.createdDate)} 天</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="task-del"
+                      aria-label={`删除待办：${todo.text}`}
+                      title="删除待办"
+                      onClick={() => remove(todo.id)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 已完成：沉底划线 */}
+          {doneTodos.length > 0 && (
+            <div className="todo-group">
+              <div className="todo-group-title">✅ 已完成（{doneTodos.length}）</div>
+              <ul className="todo-list">
+                {doneTodos.map((todo) => (
+                  <li key={todo.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <button
+                      type="button"
+                      className="todo-item done"
+                      role="checkbox"
+                      aria-checked={true}
+                      aria-label={`取消完成：${todo.text}`}
+                      onClick={() => toggle(todo.id, false)}
+                    >
+                      <span className="todo-check">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12.5l4.5 4.5L19 7" />
+                        </svg>
+                      </span>
+                      <span className="todo-text">{todo.text}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="task-del"
+                      aria-label={`删除待办：${todo.text}`}
+                      title="删除待办"
+                      onClick={() => remove(todo.id)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 今日进度：今日完成率 */}
+          {todayTotal > 0 && (
             <div style={{ marginTop: 8 }}>
               <div className="progress-meta" style={{ marginBottom: 3 }}>
-                <span style={{ fontSize: 10, color: "var(--muted)" }}>待办进度</span>
+                <span style={{ fontSize: 10, color: "var(--muted)" }}>今日进度</span>
                 <b className="num" style={{ fontSize: 10 }}>
-                  {todos.filter((t) => t.done).length}/{todos.length}
+                  {doneToday}/{todayTotal}
                 </b>
               </div>
               <div className="progress">
-                <i style={{ width: `${Math.round((todos.filter((t) => t.done).length / todos.length) * 100)}%` }} />
+                <i style={{ width: `${Math.round((doneToday / todayTotal) * 100)}%` }} />
               </div>
             </div>
           )}
@@ -341,7 +475,8 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
           </div>
         </section>
 
-        {/* 系统提醒 */}
+        {/* 系统提醒（设置：系统提醒开关控制） */}
+        {prefs.remind && (
         <section className="side-card side-reminders" data-od-id="sidebar-reminders">
           <div className="side-head">
             <h2 className="side-title">系统提醒</h2>
@@ -458,6 +593,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
             )}
           </ul>
         </section>
+        )}
       </div>
 
       {/* 到点提醒弹窗 */}
@@ -485,7 +621,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
           把生活与工作，<b>过成作品</b>
         </p>
         <div className="foot-icons">
-          <a className="icon-btn" href="/workbench" aria-label="个人空间" title="个人空间">
+          <a className="icon-btn" href="/space" aria-label="个人空间" title="个人空间">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -496,20 +632,6 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
             >
               <circle cx="12" cy="8" r="3.6" />
               <path d="M4.5 20c1.2-3.6 4-5.2 7.5-5.2s6.3 1.6 7.5 5.2" />
-            </svg>
-          </a>
-          <a className="icon-btn" href="/workbench" aria-label="快捷入口" title="快捷入口">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-            >
-              <rect x="3.5" y="3.5" width="7" height="7" rx="1.6" />
-              <rect x="13.5" y="3.5" width="7" height="7" rx="1.6" />
-              <rect x="3.5" y="13.5" width="7" height="7" rx="1.6" />
-              <rect x="13.5" y="13.5" width="7" height="7" rx="1.6" />
             </svg>
           </a>
           <a className="icon-btn" href="/settings" aria-label="设置" title="设置">

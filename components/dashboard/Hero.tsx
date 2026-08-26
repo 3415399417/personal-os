@@ -5,11 +5,17 @@ import type { DashboardData } from "@/types";
  * Hero 区：hero-scene 场景插画 + 文案 + 今日最重要任务卡
  * 结构照搬原型；数据来自 Dashboard（DB 实时），无焦点任务时显示空状态
  */
-export function Hero({ focus }: { focus?: DashboardData["focus"] }) {
+export function Hero({ focus, streak }: { focus?: DashboardData["focus"]; streak?: number }) {
   const hasFocus = !!focus && !!focus.title;
 
   return (
     <section className="hero-card" data-od-id="hero">
+      {/* 右上角：连续使用天数徽章 */}
+      {!!streak && streak > 0 && (
+        <div className="hero-streak" title="连续使用天数">
+          🔥 {streak} 天
+        </div>
+      )}
       <div className="hero-scene" aria-hidden="true">
         <svg viewBox="0 0 860 340" preserveAspectRatio="xMidYMid slice" fill="none">
           <rect width="860" height="340" fill="#F5F3FF" />

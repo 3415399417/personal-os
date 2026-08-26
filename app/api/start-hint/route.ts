@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +13,22 @@ const API_KEY = process.env.DSH_DEEPSEEK_KEY;
 export async function GET() {
   if (!API_KEY) {
     return NextResponse.json({ ok: false, error: "未配置 DSH_DEEPSEEK_KEY" }, { status: 500 });
+  }
+  // 每日自动备份：距上次备份超过 24h 就备份一次（静默，失败不影响提示）
+  try {
+    const dbPath = path.join(process.cwd(), "dev.db");
+    const dir = path.join(process.cwd(), "backup");
+    if (fs.existsSync(dbPath)) {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const files = fs.readdirSync(dir).filter((f) => /^dev-\d{14}\.db$/.test(f)).sort();
+      const latest = files.length ? fs.statSync(path.join(dir, files[files.length - 1])).mtimeMs : 0;
+      if (Date.now() - latest > 86400000) {
+        const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+        fs.copyFileSync(dbPath, path.join(dir, `dev-${stamp}.db`));
+      }
+    }
+  } catch {
+    /* 备份失败不影响晨间提示 */
   }
   try {
     const dayStart = new Date();

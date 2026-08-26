@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getNotifications } from "@/lib/api";
+import { getNotificationsForBell, markAllNotificationsRead, deleteNotification, clearAllNotifications } from "@/lib/api";
+import type { BellNotification } from "@/lib/api";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -36,8 +37,7 @@ const NAV_ITEMS = [
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const [bellOpen, setBellOpen] = useState(false);
-  const [readAll, setReadAll] = useState(false);
-  const [notifications, setNotifications] = useState<{ id: string; title: string; meta: string }[]>([]);
+  const [bellData, setBellData] = useState<{ unreadCount: number; items: BellNotification[] } | null>(null);
   const bellWrapRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
@@ -46,8 +46,15 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
 
+  const loadBell = () => {
+    getNotificationsForBell().then(setBellData).catch(() => {});
+  };
+
   useEffect(() => {
-    getNotifications().then(setNotifications);
+    loadBell();
+    const onChanged = () => loadBell();
+    window.addEventListener("betterlife:data-changed", onChanged);
+    return () => window.removeEventListener("betterlife:data-changed", onChanged);
   }, []);
 
   // 点击外部关闭通知
@@ -93,6 +100,25 @@ export function Header({ onMenuClick }: HeaderProps) {
     return () => clearTimeout(t);
   }, [query]);
 
+  /** 命令匹配：输入内容同时匹配“操作”，支持中英文/模糊 */
+  const COMMANDS = [
+    { keys: ["新建任务", "新任务", "任务", "add"], href: "/today", label: "新建任务", icon: "＋" },
+    { keys: ["去今天", "今天", "today"], href: "/today", label: "去「今天」页", icon: "📅" },
+    { keys: ["去项目", "项目", "projects"], href: "/projects", label: "去「项目」页", icon: "📁" },
+    { keys: ["去学习", "学习", "learning"], href: "/learning", label: "去「学习」页", icon: "📖" },
+    { keys: ["去复盘", "复盘", "review"], href: "/review", label: "去「复盘」页", icon: "🔁" },
+    { keys: ["去统计", "统计", "stats"], href: "/stats", label: "去「统计」页", icon: "📊" },
+    { keys: ["GitHub", "情报", "github"], href: "/github", label: "去「GitHub 情报」", icon: "🛰️" },
+    { keys: ["去设置", "设置", "settings"], href: "/settings", label: "去「设置」页", icon: "⚙️" },
+    { keys: ["个人空间", "我的", "space", "资料"], href: "/space", label: "去「个人空间」", icon: "👤" },
+    { keys: ["去工作台", "工作台", "workbench"], href: "/workbench", label: "去「工作台」页", icon: "🗂️" },
+    { keys: ["导出", "备份", "export", "backup"], href: "/api/export", label: "导出全部数据", icon: "💾" },
+  ];
+
+  const matchedCommands = query.trim()
+    ? COMMANDS.filter((c) => c.keys.some((k) => k.toLowerCase().includes(query.trim().toLowerCase())))
+    : [];
+
   const total = results ? results.tasks.length + results.projects.length + results.notes.length + results.resources.length : 0;
 
   const goSearch = (url: string) => {
@@ -130,6 +156,20 @@ export function Header({ onMenuClick }: HeaderProps) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Enter：优先执行匹配到的命令（有命令时先走命令，否则走首个搜索结果）
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    if (matchedCommands.length > 0) {
+      e.preventDefault();
+      goSearch(matchedCommands[0].href);
+      return;
+    }
+    if (total > 0) {
+      const g = groups.find((gr) => results![gr.key].length > 0)!;
+      goSearch(resultUrl(g.key, results![g.key][0]));
+    }
+  };
 
   return (
     <header className="topbar" data-od-id="topnav">
@@ -187,12 +227,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 setQuery(e.target.value);
                 if (e.target.value.trim()) setSearchOpen(true);
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && total > 0) {
-                  const g = groups.find((gr) => results![gr.key].length > 0)!;
-                  goSearch(resultUrl(g.key, results![g.key][0]));
-                }
-              }}
+              onKeyDown={onSearchKeyDown}
               onFocus={() => {
                 if (query.trim()) setSearchOpen(true);
               }}
@@ -201,27 +236,52 @@ export function Header({ onMenuClick }: HeaderProps) {
               <div className="search-results" data-od-id="search-results">
                 {searchLoading ? (
                   <div className="search-empty">搜索中…</div>
-                ) : !query.trim() ? null : total === 0 ? (
-                  <div className="search-empty">没有找到与「{query.trim()}」相关的内容</div>
-                ) : (
-                  groups.map((g) =>
-                    results![g.key].length > 0 ? (
-                      <div className="search-group" key={g.key}>
-                        <div className="search-group-label">{g.label}</div>
-                        {results![g.key].map((it) => (
+                ) : !query.trim() ? null : (
+                  <>
+                    {/* 命令区：输入同时匹配操作，置顶展示 */}
+                    {matchedCommands.length > 0 && (
+                      <div className="search-group">
+                        <div className="search-group-label">操作</div>
+                        {matchedCommands.slice(0, 5).map((c) => (
                           <div
                             className="search-result-item"
-                            key={it.id}
-                            onClick={() => goSearch(resultUrl(g.key, it))}
+                            key={c.label}
+                            onClick={() => goSearch(c.href)}
+                            style={{ cursor: "pointer" }}
                           >
-                            <span className="search-result-ico" aria-hidden="true">{g.icon}</span>
-                            <span className="search-result-title">{it.title}</span>
-                            <span className="search-result-meta">{it.meta}</span>
+                            <span className="search-result-ico" aria-hidden="true">{c.icon}</span>
+                            <span className="search-result-title">{c.label}</span>
+                            <span className="search-result-meta">命令</span>
                           </div>
                         ))}
                       </div>
-                    ) : null
-                  )
+                    )}
+                    {total === 0 && matchedCommands.length === 0 ? (
+                      <div className="search-empty">没有找到与「{query.trim()}」相关的内容</div>
+                    ) : (
+                      <>
+                        {results &&
+                          groups.map((g) =>
+                            results![g.key].length > 0 ? (
+                              <div className="search-group" key={g.key}>
+                                <div className="search-group-label">{g.label}</div>
+                                {results![g.key].map((it) => (
+                                  <div
+                                    className="search-result-item"
+                                    key={it.id}
+                                    onClick={() => goSearch(resultUrl(g.key, it))}
+                                  >
+                                    <span className="search-result-ico" aria-hidden="true">{g.icon}</span>
+                                    <span className="search-result-title">{it.title}</span>
+                                    <span className="search-result-meta">{it.meta}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null,
+                          )}
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -235,6 +295,10 @@ export function Header({ onMenuClick }: HeaderProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 setBellOpen((v) => !v);
+                if (!bellOpen) {
+                  // 打开面板 → 全部已读（持久化）
+                  markAllNotificationsRead().then(loadBell).catch(() => {});
+                }
               }}
             >
               <svg
@@ -248,8 +312,9 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <path d="M6 9.5a6 6 0 0 1 12 0c0 4.2 1.6 5.4 1.6 5.4H4.4S6 13.7 6 9.5z" />
                 <path d="M10.2 19a2 2 0 0 0 3.6 0" />
               </svg>
-              {!readAll && <span className="bell-dot" aria-hidden="true" />}
-              {readAll && <span className="bell-dot" aria-hidden="true" style={{ display: "none" }} />}
+              {(bellData?.unreadCount ?? 0) > 0 && (
+                <span className="bell-count">{bellData!.unreadCount > 9 ? "9+" : bellData!.unreadCount}</span>
+              )}
             </button>
             <div
               className={`bell-pop${bellOpen ? " open" : ""}`}
@@ -259,30 +324,55 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <div className="bell-pop-head">
                 <b>通知</b>
-                <button
-                  onClick={() => {
-                    setReadAll(true);
-                  }}
-                >
-                  全部已读
-                </button>
+                {(bellData?.unreadCount ?? 0) > 0 && <span className="badge warn">{bellData!.unreadCount} 未读</span>}
               </div>
               <ul>
-                {notifications.map((n) => (
-                  <li key={n.id}>
-                    <b>{n.title}</b>
-                    <span>{n.meta}</span>
+                {(bellData?.items ?? []).map((n) => (
+                  <li key={n.id} className={`bell-item${n.read ? " read" : ""}`}>
+                    <div className="bell-item-main">
+                      <b>{n.title}</b>
+                      {n.body && <span>{n.body}</span>}
+                      <em>{n.time}</em>
+                    </div>
+                    {n.id !== "__overdue__" && (
+                      <button
+                        type="button"
+                        className="bell-item-del"
+                        aria-label={`删除通知：${n.title}`}
+                        title="删除通知"
+                        onClick={() => {
+                          deleteNotification(n.id)
+                            .then(loadBell)
+                            .catch(() => {});
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                      </button>
+                    )}
                   </li>
                 ))}
-                {notifications.length === 0 && (
+                {(bellData?.items ?? []).length === 0 && (
                   <li style={{ fontSize: 11.5, color: "var(--muted)", padding: "10px 8px", borderTop: "1px solid var(--border)" }}>
-                    暂无新通知
+                    暂无通知
                   </li>
                 )}
               </ul>
+              {(bellData?.items ?? []).length > 0 && (
+                <div className="bell-pop-foot">
+                  <button
+                    onClick={() => {
+                      clearAllNotifications().then(loadBell).catch(() => {});
+                    }}
+                  >
+                    清空全部
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          <button className="avatar" aria-label="个人资料" title="个人资料">
+          <a className="avatar" href="/space" aria-label="个人空间" title="个人空间">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -294,7 +384,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <circle cx="12" cy="8.5" r="3.4" />
               <path d="M4.8 20c1.2-3.4 3.9-5 7.2-5s6 1.6 7.2 5" />
             </svg>
-          </button>
+          </a>
         </div>
       </div>
     </header>

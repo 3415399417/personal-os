@@ -7,7 +7,8 @@ import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { createReview, deleteReview, getReviews, getRecentCompletedTasks } from "@/lib/api";
-import type { Review } from "@/types";
+import { getFrictionLogs } from "@/lib/api";
+import type { FrictionLogItem, Review } from "@/types";
 
 interface RecentTask {
   id: string;
@@ -20,10 +21,14 @@ export default function ReviewPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState<"day" | "week">("day");
   const [report, setReport] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
   const [reportErr, setReportErr] = useState("");
   const [reportExpanded, setReportExpanded] = useState(false);
+  const [savingReport, setSavingReport] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [frictions, setFrictions] = useState<FrictionLogItem[]>([]);
   const [viewing, setViewing] = useState<Review | null>(null);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -34,6 +39,7 @@ export default function ReviewPage() {
   useEffect(() => {
     load();
     getRecentCompletedTasks(7).then(setRecentTasks).catch(() => {});
+    getFrictionLogs({ days: 7, limit: 20 }).then(setFrictions).catch(() => {});
   }, []);
 
   const load = () => getReviews().then(setReviews);
@@ -46,6 +52,7 @@ export default function ReviewPage() {
   const genReport = (period: "day" | "week") => {
     setReportLoading(true);
     setReportErr("");
+    setReportPeriod(period);
     fetch(`/api/report?period=${period}`)
       .then((r) => r.json())
       .then((d) => {
@@ -58,6 +65,27 @@ export default function ReviewPage() {
 
   const copyReport = () => {
     navigator.clipboard?.writeText(report).catch(() => {});
+  };
+
+  /** 日报/周报一键存为复盘记录 */
+  const saveReport = () => {
+    if (!report.trim() || savingReport) return;
+    setSavingReport(true);
+    const now = new Date();
+    createReview({
+      title: `${now.getMonth() + 1}月${now.getDate()}日${reportPeriod === "day" ? "日报" : "周报"}复盘`,
+      period: `${now.getFullYear()}年${now.getMonth() + 1}月`,
+      summary: report.trim(),
+    })
+      .then(() => {
+        setReport("");
+        setSavedFlash(true);
+        window.dispatchEvent(new Event("betterlife:data-changed"));
+        window.setTimeout(() => setSavedFlash(false), 3000);
+        return load();
+      })
+      .catch((e) => setReportErr(e.message || "保存失败"))
+      .finally(() => setSavingReport(false));
   };
 
   const create = () => {
@@ -139,11 +167,44 @@ export default function ReviewPage() {
             <button className="btn btn-soft" style={{ marginTop: 8, height: 26, fontSize: 11, padding: "0 12px" }} onClick={copyReport}>
               复制报告
             </button>
+            <button className="btn btn-primary" style={{ marginTop: 8, height: 26, fontSize: 11, padding: "0 12px" }} onClick={saveReport} disabled={savingReport}>
+              {savingReport ? "保存中…" : "💾 存为复盘"}
+            </button>
+            {savedFlash && (
+              <span style={{ fontSize: 11.5, color: "#10B981", marginLeft: 8 }}>✓ 已存入复盘记录</span>
+            )}
           </div>
         ) : (
           <div style={{ fontSize: 12.5, color: "var(--muted)", padding: "8px 0" }}>
             一键生成今日日报或本周周报：自动汇总完成任务、笔记、复盘、学习记录，由 AI 提炼总结。
           </div>
+        )}
+      </div>
+
+      {/* 近期摩擦：任务卡点汇总，写复盘时对照 */}
+      <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title">🧱 近期摩擦（7 天）</div>
+          <Link href="/projects" className="btn-add" style={{ textDecoration: "none" }}>
+            去记录 +
+          </Link>
+        </div>
+        {frictions.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: "var(--muted)", padding: "8px 0" }}>
+            近 7 天没有摩擦记录——在项目任务展开区点「记一笔」记录卡点，复盘就有素材了。
+          </div>
+        ) : (
+          <ul className="task-friction-list" style={{ padding: "8px 0" }}>
+            {frictions.map((f) => (
+              <li key={f.id} className="task-friction-item">
+                <span className="ev-time">{f.time}</span>
+                <span className="ev-detail">
+                  {f.content}
+                  {f.taskTitle && <em style={{ color: "var(--muted)", marginLeft: 6, fontSize: 10.5 }}>· {f.taskTitle}</em>}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

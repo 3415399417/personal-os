@@ -7,9 +7,39 @@ import { Header } from "@/components/layout/Header";
 import { useReminderNotifications } from "@/hooks/useReminderNotifications";
 import { useAutoReport } from "@/hooks/useAutoReport";
 import { useAutoBackup } from "@/hooks/useAutoBackup";
+import { useUsageTimer } from "@/hooks/useUsageTimer";
+import { useGithubAutoCheck } from "@/hooks/useGithubAutoCheck";
+import { useShortcuts } from "@/hooks/useShortcuts";
+
+/** 全局设置：读取 localStorage 并应用到全局（如主题） */
+function useGlobalSettings() {
+  useEffect(() => {
+    const apply = () => {
+      try {
+        const raw = localStorage.getItem("personalos:settings");
+        const s = raw ? JSON.parse(raw) : {};
+        void s;
+      } catch {
+        /* ignore */
+      }
+    };
+    apply();
+    window.addEventListener("betterlife:settings-changed", apply);
+    return () => window.removeEventListener("betterlife:settings-changed", apply);
+  }, []);
+}
 
 /** 应用外壳：div.app = Sidebar(260px) + .main(Topbar + .content)，结构照搬原型 */
 export function AppShell({ children }: { children: React.ReactNode }) {
+  useGlobalSettings();
+  useShortcuts();
+  // 学习时长计时（打开系统即计时）
+  useUsageTimer();
+  // GitHub 情报自动检测（每日首次 + 每 6 小时）
+  useGithubAutoCheck((count) => {
+    setToast(`🛰️ GitHub 情报更新：新增 ${count} 条，见情报页`);
+    window.setTimeout(() => setToast(null), 5000);
+  });
   // 主题初始化（暗色模式持久化）
   useEffect(() => {
     if (localStorage.getItem("theme") === "dark") {

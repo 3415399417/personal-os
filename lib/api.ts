@@ -5,6 +5,7 @@ import type {
   Asset,
   ConversationMessage,
   DashboardData,
+  FrictionLogItem,
   InboxItem,
   LearningRecord,
   Note,
@@ -58,12 +59,39 @@ export function deleteTodo(id: string): Promise<void> {
   return call<void>("deleteTodo", { id });
 }
 
-export function getExecEntries(): Promise<unknown[]> {
-  return call<unknown[]>("getExecEntries");
-}
-
 export function getNotifications(): Promise<{ id: string; title: string; meta: string }[]> {
   return call("getNotifications");
+}
+
+/* ── 通知中心 ── */
+
+export interface BellNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+}
+
+export function getNotificationsForBell(): Promise<{ unreadCount: number; items: BellNotification[] }> {
+  return call("getNotificationsForBell");
+}
+
+export function createNotification(input: { type: string; title: string; body?: string }): Promise<void> {
+  return call("createNotification", input);
+}
+
+export function markAllNotificationsRead(): Promise<void> {
+  return call("markAllNotificationsRead");
+}
+
+export function deleteNotification(id: string): Promise<void> {
+  return call("deleteNotification", { id });
+}
+
+export function clearAllNotifications(): Promise<void> {
+  return call("clearAllNotifications");
 }
 
 /* ── /today ── */
@@ -233,10 +261,20 @@ export function updateNote(id: string, patch: { title?: string; content?: string
   return call<Note | null>("updateNote", { id, patch });
 }
 
+/** 笔记挂靠到项目（孤儿档案一键归属）；projectId 传 null 解除 */
+export function attachNoteToProject(noteId: string, projectId: string | null): Promise<Note | null> {
+  return call<Note | null>("attachNoteToProject", { noteId, projectId });
+}
+
 /* ── /learning ── */
 
 export function getLearningRecords(): Promise<LearningRecord[]> {
   return call<LearningRecord[]>("getLearningRecords");
+}
+
+/** 本周新增笔记（学习中心「本周沉淀」用） */
+export function getWeekNotes(): Promise<{ id: string; title: string; type: string; time: string }[]> {
+  return call("getWeekNotes");
 }
 
 export function createLearningRecord(input: { title: string; content?: string; progress?: number }): Promise<LearningRecord> {
@@ -331,14 +369,50 @@ export function generateProjectArchive(projectId: string): Promise<{ id: string;
   return call("generateProjectArchive", { projectId });
 }
 
+/** AI 生成项目复盘（导入历史项目自动沉淀用；已有同名则跳过） */
+export function generateProjectReview(projectId: string): Promise<{ id: string; title: string; skipped?: boolean }> {
+  return call("generateProjectReview", { projectId });
+}
+
+/** 项目时间线（聚合该项目所有任务的进度事件） */
+export function getProjectTimeline(projectId: string): Promise<{ id: string; type: string; detail: string; taskTitle: string; time: string }[]> {
+  return call("getProjectTimeline", { projectId });
+}
+
+/** 摩擦日志：记一条卡点 */
+export function createFrictionLog(input: { content: string; taskId?: string; projectId?: string }): Promise<FrictionLogItem> {
+  return call<FrictionLogItem>("createFrictionLog", input);
+}
+
+/** 摩擦日志：查询（按任务/项目/近 N 天） */
+export function getFrictionLogs(input?: { taskId?: string; projectId?: string; days?: number; limit?: number }): Promise<FrictionLogItem[]> {
+  return call<FrictionLogItem[]>("getFrictionLogs", input ?? {});
+}
+
+export function deleteFrictionLog(id: string): Promise<void> {
+  return call<void>("deleteFrictionLog", { id });
+}
+
 /* ── /assets ── */
 
 export function getAssets(): Promise<Asset[]> {
   return call<Asset[]>("getAssets");
 }
 
+/** 项目关联的长期资产（项目详情页用） */
+export function getProjectAssets(projectId: string): Promise<Asset[]> {
+  return call<Asset[]>("getProjectAssets", { projectId });
+}
+
 export function createAsset(input: { title: string; content: string; kind: string; projectId?: string }): Promise<Asset> {
   return call<Asset>("createAsset", input);
+}
+
+export function updateAsset(
+  id: string,
+  patch: { title?: string; content?: string; kind?: string; projectId?: string | null },
+): Promise<Asset | null> {
+  return call<Asset | null>("updateAsset", { id, patch });
 }
 
 export function deleteAsset(id: string): Promise<void> {
@@ -389,4 +463,31 @@ export function getCarryoverTasks(limit = 3): Promise<{ id: string; title: strin
 
 export function getPlanStats(): Promise<{ createdToday: number; doneToday: number; carryover: number; total: number; rate: number }> {
   return call<{ createdToday: number; doneToday: number; carryover: number; total: number; rate: number }>("getPlanStats");
+}
+
+/* ── 个人资料（数据库，换浏览器不丢）── */
+
+export interface UserProfile {
+  name: string;
+  role: string;
+  focus: string;
+  avatar: string;
+}
+
+export async function getProfile(): Promise<UserProfile> {
+  const resp = await fetch("/api/profile", { method: "GET" });
+  const d = await resp.json();
+  if (!d?.ok) throw new Error(d?.error || "加载个人资料失败");
+  return d.profile as UserProfile;
+}
+
+export async function saveProfile(profile: UserProfile): Promise<UserProfile> {
+  const resp = await fetch("/api/profile", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+  const d = await resp.json();
+  if (!d?.ok) throw new Error(d?.error || "保存个人资料失败");
+  return d.profile as UserProfile;
 }

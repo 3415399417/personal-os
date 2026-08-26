@@ -62,7 +62,7 @@ export function NotesCard({
         </div>
       ) : (
         <ul className="note-list">
-          {notes.slice(0, 3).map((n) => (
+          {notes.slice(0, 4).map((n) => (
             <li
               className={`note-item${n.time.startsWith("今天") ? " note-today" : ""}`}
               key={n.id}

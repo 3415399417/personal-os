@@ -1,9 +1,18 @@
-// 验证自动备份：清标记 → 打开页面 → 检查 backup/ 新文件 + toast
+// 验证自动备份：清标记 → 打开页面 → 检查备份结果（新建或当天已备份跳过）
 import fs from "node:fs";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
 
 const BACKUP_DIR = "E:\\我的项目\\personal-os\\backup";
+
+// 当天（本地日期）是否已有备份文件
+function hasTodayBackup() {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  return fs.existsSync(BACKUP_DIR)
+    ? fs.readdirSync(BACKUP_DIR).some((f) => f.startsWith(`dev-${ymd}`))
+    : false;
+}
 
 (async () => {
   // 记录备份前文件数
@@ -29,8 +38,10 @@ const BACKUP_DIR = "E:\\我的项目\\personal-os\\backup";
 
   console.log("备份前文件数:", before, "→ 备份后:", after);
   console.log("toast:", toast ?? "无");
-  const ok = after > before && /备份/.test(toast ?? "");
-  console.log(ok ? "✅ 自动备份生效" : "❌ 自动备份未生效");
+  const hadToday = hasTodayBackup();
+  // 新建成功：文件数 +1 且有 toast；或当天已备份过：文件数不变（服务端去重，正常）
+  const ok = (after > before && /备份/.test(toast ?? "")) || (after === before && hadToday);
+  console.log(ok ? "✅ 自动备份正常（新建或当天已备份跳过）" : "❌ 自动备份未生效");
   await browser.close();
   process.exit(ok ? 0 : 1);
 })().catch((e) => { console.error("FATAL:", e.message); process.exit(1); });

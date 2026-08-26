@@ -163,6 +163,29 @@ b { font-weight: 600; }
 }
 .todo-input-row input::placeholder { color: var(--muted); }
 
+/* 待办分组：今日 / 已过期（红色提醒）/ 已完成 */
+.todo-group { margin-top: 8px; }
+.todo-group + .todo-group { margin-top: 8px; }
+.todo-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 2px 4px;
+  letter-spacing: .3px;
+}
+.todo-group-title.overdue { color: #DC2626; }
+.todo-item.overdue .todo-text { color: #B91C1C; }
+.todo-overdue-tag {
+  flex: none;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #DC2626;
+  background: #FEE2E2;
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
 /* reminders */
 .remind-list { margin-top: 10px; display: flex; flex-direction: column; }
 .remind-item {
@@ -245,6 +268,40 @@ b { font-weight: 600; }
   position: absolute; top: 8px; right: 9px; width: 7px; height: 7px;
   background: var(--accent); border: 1.5px solid var(--bg); border-radius: 50%;
 }
+/* 未读数字徽标 */
+.bell-count {
+  position: absolute; top: 3px; right: 2px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 9px;
+  background: #DC2626; color: #fff;
+  font-size: 9.5px; font-weight: 700;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--bg);
+}
+/* 通知条目 */
+.bell-pop ul li { position: relative; }
+.bell-pop ul li .bell-item-main { display: flex; flex-direction: column; gap: 1px; padding-right: 18px; }
+.bell-pop ul li em { color: var(--muted); font-size: 10.5px; font-style: normal; margin-top: 2px; }
+.bell-pop ul li.read { opacity: 0.62; }
+.bell-item-del {
+  position: absolute; top: 8px; right: 4px;
+  width: 20px; height: 20px; border-radius: 6px;
+  display: grid; place-items: center;
+  color: var(--muted); opacity: 0;
+  transition: opacity .15s ease, background .15s ease, color .15s ease;
+}
+.bell-pop ul li:hover .bell-item-del { opacity: 1; }
+.bell-item-del:hover { background: #FEE2E2; color: #DC2626; }
+.bell-item-del svg { width: 11px; height: 11px; }
+.bell-pop-foot {
+  border-top: 1px solid var(--border);
+  padding: 8px 4px 2px;
+  display: flex;
+}
+.bell-pop-foot button {
+  font-size: 11px; color: var(--muted);
+  margin-left: auto;
+}
+.bell-pop-foot button:hover { color: #DC2626; text-decoration: underline; }
 .bell-pop {
   position: absolute; right: 0; top: calc(100% + 10px); width: 300px;
   background: var(--white); border: 1px solid var(--border);

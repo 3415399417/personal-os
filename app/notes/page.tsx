@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
-import { createNote, deleteNote, getNotes, getProjects, updateNote } from "@/lib/api";
+import { createNote, deleteNote, getNotes, getProjects, updateNote, attachNoteToProject } from "@/lib/api";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
 import { NoteViewPrefs } from "@/components/common/NoteViewPrefs";
 import type { Note, Project } from "@/types";
@@ -28,6 +28,9 @@ export default function NotesPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [noteProjectId, setNoteProjectId] = useState("");
   const [openFolder, setOpenFolder] = useState<string | null>(null);
+  // 孤儿档案挂靠
+  const [attachTarget, setAttachTarget] = useState("");
+  const [attaching, setAttaching] = useState(false);
 
   useEffect(() => {
     load();
@@ -63,6 +66,22 @@ export default function NotesPage() {
     setSelected(n);
     setConfirmDel(false);
     setEditing(false);
+    setAttachTarget("");
+  };
+
+  /** 孤儿档案一键挂靠到项目 */
+  const doAttach = () => {
+    if (!selected || !attachTarget || attaching) return;
+    setAttaching(true);
+    attachNoteToProject(selected.id, attachTarget)
+      .then(() => {
+        setSelected(null);
+        setAttachTarget("");
+        window.dispatchEvent(new Event("betterlife:data-changed"));
+        return load();
+      })
+      .catch(() => {})
+      .finally(() => setAttaching(false));
   };
 
   const startEdit = () => {
@@ -190,6 +209,9 @@ export default function NotesPage() {
                   </svg>
                 </div>
                 <span className="badge">{n.type}</span>
+                {!n.projectId && n.title.includes("项目档案") && (
+                  <span className="badge warn">未关联项目</span>
+                )}
               </div>
               <h3 className="mini-card-title">{n.title}</h3>
               <div className="mini-card-desc">
@@ -289,6 +311,28 @@ export default function NotesPage() {
                 <NoteViewPrefs content={selected.content} />
               )}
             </div>
+            {!editing && !selected.projectId && selected.title.includes("项目档案") && (
+              <div className="field" style={{ marginTop: 10 }}>
+                <label className="field-label">关联到项目（归档进项目文件夹）</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <select className="select" value={attachTarget} onChange={(e) => setAttachTarget(e.target.value)}>
+                    <option value="">选择项目…</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ height: 30, fontSize: 11.5, padding: "0 12px" }}
+                    onClick={doAttach}
+                    disabled={!attachTarget || attaching}
+                  >
+                    {attaching ? "挂靠中…" : "挂靠"}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="modal-foot">
               {editing ? (
                 <>

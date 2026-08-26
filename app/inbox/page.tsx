@@ -4,8 +4,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/common/PageHead";
 import { EmptyState } from "@/components/common/EmptyState";
-import { createInboxItem, createNote, createTask, getInboxItems, markInboxHandled } from "@/lib/api";
-import type { InboxItem } from "@/types";
+import { createInboxItem, createNote, createTask, getInboxItems, getProjects, markInboxHandled } from "@/lib/api";
+import { Modal } from "@/components/common/Modal";
+import type { InboxItem, Project } from "@/types";
 
 const SOURCES = ["全部", "微信", "语音", "邮件", "随手记"] as const;
 
@@ -23,9 +24,15 @@ export default function InboxPage() {
   const [adding, setAdding] = useState(false);
   const [suggesting, setSuggesting] = useState<string | null>(null);
   const [suggests, setSuggests] = useState<Record<string, Suggest>>({});
+  // 转任务/转笔记弹窗：可选项目与类型
+  const [convert, setConvert] = useState<{ item: InboxItem; type: "task" | "note" } | null>(null);
+  const [convertProject, setConvertProject] = useState("");
+  const [convertNoteType, setConvertNoteType] = useState("灵感");
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     load();
+    getProjects().then(setProjects).catch(() => {});
   }, []);
 
   const load = () => getInboxItems().then(setItems);
@@ -62,12 +69,12 @@ export default function InboxPage() {
       .finally(() => setSuggesting(null));
   };
 
-  const applySuggest = (id: string, s: Suggest) => {
+  const applySuggest = (id: string, s: Suggest, noteKind = "note") => {
     const item = items.find((i) => i.id === id);
     const p = s.type === "task"
       ? createTask({ title: s.title, group: "must", projectId: s.projectId ?? undefined })
       : s.type === "note"
-        ? createNote({ title: s.title, content: item?.text ?? "", type: "note", projectId: s.projectId ?? undefined })
+        ? createNote({ title: s.title, content: item?.text ?? "", type: noteKind, projectId: s.projectId ?? undefined })
         : Promise.resolve();
     p.then(() => {
       setSuggests((prev) => {
@@ -83,6 +90,26 @@ export default function InboxPage() {
 
   const shown = filter === "全部" ? items : items.filter((i) => i.source === filter);
   const unhandled = items.filter((i) => !i.handled).length;
+
+  /** 打开转任务/转笔记弹窗 */
+  const openConvert = (item: InboxItem, type: "task" | "note") => {
+    setConvert({ item, type });
+    setConvertProject("");
+    setConvertNoteType("灵感");
+  };
+
+  /** 确认流转 */
+  const confirmConvert = () => {
+    if (!convert) return;
+    const pid = convertProject || null;
+    const projName = projects.find((p) => p.id === pid)?.name ?? "";
+    applySuggest(
+      convert.item.id,
+      { type: convert.type, title: convert.item.text.slice(0, 30), projectId: pid, projectName: projName },
+      convert.type === "note" ? convertNoteType : undefined,
+    );
+    setConvert(null);
+  };
 
   return (
     <AppShell>
@@ -206,14 +233,14 @@ export default function InboxPage() {
                         <button
                           className="btn btn-soft"
                           style={{ height: 26, fontSize: 11, padding: "0 10px" }}
-                          onClick={() => applySuggest(i.id, { type: "task", title: i.text.slice(0, 30), projectId: null, projectName: "" })}
+                          onClick={() => openConvert(i, "task")}
                         >
                           转为任务
                         </button>
                         <button
                           className="btn btn-soft"
                           style={{ height: 26, fontSize: 11, padding: "0 10px" }}
-                          onClick={() => applySuggest(i.id, { type: "note", title: i.text.slice(0, 30), projectId: null, projectName: "" })}
+                          onClick={() => openConvert(i, "note")}
                         >
                           存为笔记
                         </button>
@@ -240,6 +267,51 @@ export default function InboxPage() {
           </div>
         </section>
       </div>
+
+      {/* 转任务/转笔记：选项目与类型 */}
+      <Modal
+        title={convert?.type === "task" ? "转为任务" : "存为笔记"}
+        open={!!convert}
+        onClose={() => setConvert(null)}
+        foot={
+          <>
+            <button className="btn btn-soft" onClick={() => setConvert(null)}>取消</button>
+            <button className="btn btn-primary" onClick={confirmConvert}>确认</button>
+          </>
+        }
+      >
+        {convert && (
+          <>
+            <p style={{ fontSize: 12.5, color: "var(--fg)", lineHeight: 1.6, marginBottom: 10 }}>
+              「{convert.item.text}」
+            </p>
+            <div className="field">
+              <label className="field-label" htmlFor="cv-project">关联项目（可选）</label>
+              <select id="cv-project" className="select" value={convertProject} onChange={(e) => setConvertProject(e.target.value)}>
+                <option value="">不关联</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            {convert.type === "note" && (
+              <div className="field">
+                <label className="field-label" htmlFor="cv-type">笔记类型</label>
+                <select id="cv-type" className="select" value={convertNoteType} onChange={(e) => setConvertNoteType(e.target.value)}>
+                  {["灵感", "笔记", "复盘", "读书笔记", "客户分析", "模板"].map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {convert.type === "task" && (
+              <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>
+                任务将加入「必须完成」分组，可在今天页调整。
+              </p>
+            )}
+          </>
+        )}
+      </Modal>
       </div>
     </AppShell>
   );

@@ -20,7 +20,7 @@ async function collect(days: number) {
   const since = new Date(Date.now() - days * 86400000);
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
-  const [tasks, notes, reviews, learnings, projects, createdToday, carryover, dev] = await Promise.all([
+  const [tasks, notes, reviews, learnings, projects, createdToday, carryover, dev, frictions] = await Promise.all([
     prisma.task.findMany({
       where: { status: "completed", completedAt: { gte: since } },
       orderBy: { completedAt: "desc" },
@@ -34,8 +34,14 @@ async function collect(days: number) {
     prisma.task.count({ where: { createdAt: { gte: dayStart } } }),
     prisma.task.count({ where: { status: { not: "completed" }, createdAt: { lt: dayStart } } }),
     db.getDevActivity(since),
+    prisma.frictionLog.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { content: true, task: { select: { title: true } } },
+    }),
   ]);
-  return { tasks, notes, reviews, learnings, projects, createdToday, carryover, dev };
+  return { tasks, notes, reviews, learnings, projects, createdToday, carryover, dev, frictions };
 }
 
 function buildPrompt(period: "day" | "week", data: Awaited<ReturnType<typeof collect>>): string {
@@ -47,6 +53,7 @@ function buildPrompt(period: "day" | "week", data: Awaited<ReturnType<typeof col
   const noteLines = data.notes.map((n) => `- ${n.title}`).join("\n") || "- 无";
   const reviewLines = data.reviews.map((r) => `- ${r.period || "复盘"}：${(r.summary || "").slice(0, 50)}`).join("\n") || "- 无";
   const learnLines = data.learnings.map((l) => `- ${l.title}`).join("\n") || "- 无";
+  const frictionLines = data.frictions.map((f) => `- ${f.content}${f.task?.title ? `（${f.task.title}）` : ""}`).join("\n") || "- 无";
   const projLines = data.projects.map((p) => `${p.name}(${p.status})`).join("、") || "无";
   const doneToday = data.tasks.length;
   const planTotal = data.createdToday + data.carryover;
@@ -56,7 +63,7 @@ function buildPrompt(period: "day" | "week", data: Awaited<ReturnType<typeof col
   const devLine = dev && dev.updateCount > 0
     ? `检测到 ${dev.updateCount} 处产物更新（${dev.updatedPaths.slice(0, 8).join("、")}${dev.updatedPaths.length > 8 ? " 等" : ""}）${dev.confirmedTasks.length > 0 ? `，${dev.confirmedTasks.length} 个任务确认完成（${dev.confirmedTasks.slice(0, 5).join("、")}）` : ""}${dev.projects.length > 0 ? `，涉及项目：${dev.projects.join("、")}` : ""}`
     : "系统未检测到开发活动（可能是纯脑力/文档工作，或项目未关联文件夹）";
-  return `${head}。基于以下数据生成一份简洁的中文总结，结构：\n一、完成情况（列出主要完成事项，最多 8 条；若系统检测到开发进展，在对应事项中自然提及，如“完成登录接口（检测到 src/api/auth.ts 更新）”）\n二、产出与沉淀（笔记/学习/复盘要点，最多 5 条）\n三、状态与建议（2-3 句，结合进行中的项目给出下一步建议）\n要求：真实引用数据，不要编造；总字数 200 字以内；用 Markdown 但不要用标题符号 #。\n\n【${period === "day" ? "今日计划" : "本周"}】\n${planLine}\n\n【开发进度（系统检测）】\n${devLine}\n\n【已完成任务】\n${taskLines}\n\n【新增笔记】\n${noteLines}\n\n【复盘】\n${reviewLines}\n\n【学习记录】\n${learnLines}\n\n【项目状态】\n${projLines}`;
+  return `${head}。基于以下数据生成一份简洁的中文总结，结构：\n一、完成情况（列出主要完成事项，最多 8 条；若系统检测到开发进展，在对应事项中自然提及，如“完成登录接口（检测到 src/api/auth.ts 更新）”）\n二、产出与沉淀（笔记/学习/复盘要点，最多 5 条）\n三、状态与建议（2-3 句，结合进行中的项目给出下一步建议）\n要求：真实引用数据，不要编造；总字数 200 字以内；用 Markdown 但不要用标题符号 #。\n\n【${period === "day" ? "今日计划" : "本周"}】\n${planLine}\n\n【开发进度（系统检测）】\n${devLine}\n\n【已完成任务】\n${taskLines}\n\n【新增笔记】\n${noteLines}\n\n【复盘】\n${reviewLines}\n\n【学习记录】\n${learnLines}\n\n【摩擦/卡点（复盘参考，如有就分析原因与对策）】\n${frictionLines}\n\n【项目状态】\n${projLines}`;
 }
 
 export async function GET(req: Request) {

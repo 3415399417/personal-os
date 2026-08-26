@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getReminders, updateReminderStatus } from "@/lib/api";
+import { getReminders, updateReminderStatus, createNotification } from "@/lib/api";
 
 /**
  * 提醒浏览器通知：每分钟检查一次待提醒项，到点弹系统通知并标记 done。
@@ -35,6 +35,12 @@ export function useReminderNotifications() {
               notifiedRef.current.add(r.id);
               new Notification(r.title, { body: r.meta || "该处理了", tag: r.id });
               updateReminderStatus(r.id, "done").catch(() => {});
+              // 写入通知中心
+              createNotification({
+                type: "reminder_due",
+                title: `⏰ ${r.title}`,
+                body: r.meta || "到点了",
+              }).catch(() => {});
             }
           }
         }

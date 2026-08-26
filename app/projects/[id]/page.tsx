@@ -8,11 +8,11 @@ import { PageHead } from "@/components/common/PageHead";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Modal } from "@/components/common/Modal";
 import { createNote, createReview, createTask, deleteProject, deleteTask, getNotes, getProject, setProjectFocus, toggleTask, updateNote, updateProject } from "@/lib/api";
-import { confirmTask, getProgressEvents, getTaskArtifactStatus, listProjectFiles, updateTaskArtifacts } from "@/lib/api";
-import { clearResourceProject, getProjectResources, generateProjectArchive } from "@/lib/api";
+import { confirmTask, getProgressEvents, getTaskArtifactStatus, listProjectFiles, updateTaskArtifacts, createFrictionLog, deleteFrictionLog, getFrictionLogs, getProjectTimeline } from "@/lib/api";
+import { clearResourceProject, getProjectResources, generateProjectArchive, createNotification, getProjectAssets } from "@/lib/api";
 import { useProjectScan } from "@/hooks/useProjectScan";
 import { MarkdownPreview } from "@/components/common/MarkdownPreview";
-import type { Note, ProgressEventItem, Project, Task, TaskArtifact, TaskGroup } from "@/types";
+import type { Asset, FrictionLogItem, Note, ProgressEventItem, Project, Task, TaskArtifact, TaskGroup, TimelineEventItem } from "@/types";
 
 const GROUP_LABEL: Record<TaskGroup, string> = {
   must: "必须完成",
@@ -67,6 +67,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [projResources, setProjResources] = useState<{ id: string; name: string; description: string; type: string; time: string }[]>([]);
+  const [projAssets, setProjAssets] = useState<Asset[]>([]);
   const [draft, setDraft] = useState("");
   const [draftGroup, setDraftGroup] = useState<TaskGroup>("doing");
   const [adding, setAdding] = useState(false);
@@ -101,6 +102,10 @@ export default function ProjectDetailPage() {
   const [pickerLoading, setPickerLoading] = useState(false);
   // AI 项目档案
   const [archiving, setArchiving] = useState(false);
+  // 摩擦日志 + 项目时间线
+  const [frictionDraft, setFrictionDraft] = useState("");
+  const [taskFrictions, setTaskFrictions] = useState<Record<string, FrictionLogItem[]>>({});
+  const [projectTimeline, setProjectTimeline] = useState<TimelineEventItem[]>([]);
 
   // 打开页面即扫 + 60s 轮询（进度感知）
   useProjectScan(id, (r) => {
@@ -123,6 +128,8 @@ export default function ProjectDetailPage() {
     getProject(id).then(setProject);
     getNotes().then(setNotes);
     getProjectResources(id).then(setProjResources).catch(() => {});
+    getProjectAssets(id).then(setProjAssets).catch(() => {});
+    getProjectTimeline(id).then(setProjectTimeline).catch(() => {});
   }, [id]);
 
   const relatedNotes = useMemo(
@@ -217,6 +224,11 @@ export default function ProjectDetailPage() {
         .catch(() => {}),
     ])
       .then(() => {
+        createNotification({
+          type: "project_done",
+          title: `🎉 ${project.name} 已完成`,
+          body: "复盘已自动生成，见复盘页",
+        }).catch(() => {});
         window.dispatchEvent(new Event("betterlife:data-changed"));
         load();
       })
@@ -324,6 +336,9 @@ export default function ProjectDetailPage() {
     getTaskArtifactStatus(t.id)
       .then(setArtifactStatus)
       .catch(() => setArtifactStatus(null));
+    getFrictionLogs({ taskId: t.id, days: 365, limit: 20 })
+      .then((fs) => setTaskFrictions((prev) => ({ ...prev, [t.id]: fs })))
+      .catch(() => {});
   };
 
   const saveArts = (t: Task) => {
@@ -335,6 +350,27 @@ export default function ProjectDetailPage() {
       })
       .then((p) => {
         if (p) setProject(p);
+      })
+      .catch(() => {});
+  };
+
+  /* 摩擦日志：记录任务卡点（喂给复盘） */
+
+  const addFriction = (t: Task) => {
+    const v = frictionDraft.trim();
+    if (!v) return;
+    createFrictionLog({ content: v, taskId: t.id, projectId: id })
+      .then((f) => {
+        setFrictionDraft("");
+        setTaskFrictions((prev) => ({ ...prev, [t.id]: [f, ...(prev[t.id] ?? [])] }));
+      })
+      .catch(() => {});
+  };
+
+  const removeFriction = (tid: string, fid: string) => {
+    deleteFrictionLog(fid)
+      .then(() => {
+        setTaskFrictions((prev) => ({ ...prev, [tid]: (prev[tid] ?? []).filter((f) => f.id !== fid) }));
       })
       .catch(() => {});
   };
@@ -414,6 +450,7 @@ export default function ProjectDetailPage() {
     status_changed: "状态变化",
     confirmed: "确认完成",
     manual: "手动",
+    project_created: "项目创建",
   };
 
   const RES_TYPE_LABEL: Record<string, string> = {
@@ -820,6 +857,48 @@ export default function ProjectDetailPage() {
                         ))}
                       </ul>
                     )}
+                    <div className="task-expand-title">摩擦记录（卡点/踩坑，复盘时参考）</div>
+                    <div className="task-friction-input">
+                      <input
+                        className="input"
+                        value={frictionDraft}
+                        onChange={(e) => setFrictionDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addFriction(t);
+                          }
+                        }}
+                        placeholder="记录卡点，如：Electron 打包一直失败，卡在签名"
+                        maxLength={120}
+                      />
+                      <button type="button" className="btn btn-soft" style={{ height: 26, fontSize: 11, padding: "0 10px" }} onClick={() => addFriction(t)}>
+                        记一笔
+                      </button>
+                    </div>
+                    {(taskFrictions[t.id] ?? []).length === 0 ? (
+                      <div className="task-expand-empty">暂无摩擦记录</div>
+                    ) : (
+                      <ul className="task-friction-list">
+                        {(taskFrictions[t.id] ?? []).map((f) => (
+                          <li key={f.id} className="task-friction-item">
+                            <span className="ev-time">{f.time}</span>
+                            <span className="ev-detail">{f.content}</span>
+                            <button
+                              type="button"
+                              className="task-del"
+                              aria-label="删除摩擦记录"
+                              title="删除"
+                              onClick={() => removeFriction(t.id, f.id)}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 7h16M10 4h4M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7M9 11v5M15 11v5" />
+                              </svg>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </li>
@@ -928,17 +1007,70 @@ export default function ProjectDetailPage() {
           )}
         </section>
 
-        {/* 关联资产：项目关联的领域/知识/指令/模板（AI 记忆器官的连接点） */}
+        {/* 项目时间线：任务进度事件聚合 */}
         <section className="panel">
           <div className="panel-head">
-            <h2 className="panel-title">关联资产</h2>
+            <h2 className="panel-title">项目时间线</h2>
+          </div>
+          {projectTimeline.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0 8px" }}>
+              暂无事件——任务完成、产物更新会记录在这里
+            </div>
+          ) : (
+            <ul className="task-timeline">
+              {projectTimeline.map((ev) => (
+                <li key={ev.id} className={`task-timeline-item ev-${ev.type}`}>
+                  <span className="ev-time">{ev.time}</span>
+                  <span className="ev-label">{EVENT_LABEL[ev.type] ?? "事件"}</span>
+                  <span className="ev-detail">
+                    {ev.taskTitle ? `【${ev.taskTitle}】` : ""}
+                    {ev.detail}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* 长期资产：SOP/Prompt/Skill 等（资产库关联到本项目） */}
+        <section className="panel">
+          <div className="panel-head">
+            <h2 className="panel-title">长期资产</h2>
+            <Link href="/assets" className="btn-add" style={{ textDecoration: "none" }}>
+              去资产库 +
+            </Link>
+          </div>
+          {projAssets.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0 8px", lineHeight: 1.6 }}>
+              还没有关联的长期资产——在资产库新建/编辑资产时选择本项目，SOP、Prompt、Skill 会沉淀到这里。
+            </div>
+          ) : (
+            <ul className="note-list">
+              {projAssets.map((a) => (
+                <li className="note-item" key={a.id}>
+                  <span className="badge">{a.kind}</span>
+                  <div className="res-item-body">
+                    <b>{a.title}</b>
+                    {a.summary && <em>{a.summary.slice(0, 60)}</em>}
+                    <span className="res-item-time">{a.time}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* 关联资源：领域/知识/指令/模板（资源库条目，与长期资产区分） */}
+        <section className="panel">
+          <div className="panel-head">
+            <h2 className="panel-title">关联资源</h2>
             <Link href="/resources/domain" className="btn-add" style={{ textDecoration: "none" }}>
               去资源库添加 +
             </Link>
           </div>
           {projResources.length === 0 ? (
             <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0 8px", lineHeight: 1.6 }}>
-              还没有关联资产——在领域/知识/指令/模板库新建条目时选择本项目，或去资源库把已有资产关联过来。
+              还没有关联资源——在领域/知识/指令/模板库新建条目时选择本项目，或去资源库把已有资源关联过来。
             </div>
           ) : (
             <ul className="note-list">

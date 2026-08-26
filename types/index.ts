@@ -5,6 +5,8 @@ export interface SidebarTodo {
   id: string;
   text: string;
   done: boolean;
+  /** 创建日期 YYYY-MM-DD（前端按 今日/过期/已完成 分组） */
+  createdDate?: string;
 }
 
 /** 今日任务分组 */
@@ -102,6 +104,7 @@ export interface Asset {
   title: string;
   summary: string;
   time: string;
+  projectId?: string;
 }
 
 export interface Review {
@@ -121,6 +124,25 @@ export interface InboxItem {
   source: string; // 微信 / 语音 / 邮件 / 随手记
   time: string;
   handled: boolean;
+}
+
+/** 摩擦日志（任务卡点记录，喂给复盘） */
+export interface FrictionLogItem {
+  id: string;
+  content: string;
+  taskId: string | null;
+  projectId: string | null;
+  taskTitle: string;
+  time: string;
+}
+
+/** 项目时间线事件 */
+export interface TimelineEventItem {
+  id: string;
+  type: string; // artifact_matched | status_changed | confirmed | manual | project_created
+  detail: string;
+  taskTitle: string;
+  time: string;
 }
 
 export interface ConversationMessage {
@@ -194,8 +216,10 @@ export interface DashboardData {
     cardCount: number;
     activePlanCount: number; // 进行中的学习计划数
     activePlanProgress: number; // 进行中计划的平均进度 0-100
-    reviewToday: number; // 今日复习知识卡片数（复习功能未做，暂为 0）
-    reviewProgress: number; // 今日复习进度 0-100（复习功能未做，暂为 0）
+    usageTodaySeconds: number; // 今日学习时长（系统使用计时）
+    usageWeekSeconds: number; // 本周学习时长累计
+    weekNotesCount: number; // 本周新增笔记数
+    assetCount: number; // 长期资产总数
     plans: LearningRecord[];
   };
   life: LifeItem[];

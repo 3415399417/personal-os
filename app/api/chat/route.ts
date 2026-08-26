@@ -398,6 +398,35 @@ async function buildSenseContext(): Promise<string> {
   }
 }
 
+/* ── 资产感知注入：用户问题命中长期资产关键词时，自动带上相关内容 ── */
+
+async function buildAssetContext(userText: string): Promise<string> {
+  try {
+    const t = (userText ?? "").trim();
+    if (!t) return "";
+    const words = [
+      ...new Set(
+        t.split(/[\s，。！？、,.!?;；:：'"“”‘’()（）\[\]【】<>《》/\\|_\-+=*#@~`^%&]+/).filter((w) => w.length >= 2),
+      ),
+    ];
+    if (words.length === 0) return "";
+    const assets = await prisma.asset.findMany({ orderBy: { updatedAt: "desc" }, take: 100 });
+    const hits: { title: string; type: string; content: string }[] = [];
+    for (const a of assets) {
+      const hay = `${a.title} ${a.type} ${a.content}`;
+      if (words.some((w) => hay.includes(w))) {
+        hits.push({ title: a.title, type: a.type, content: a.content.slice(0, 300) });
+        if (hits.length >= 3) break;
+      }
+    }
+    if (hits.length === 0) return "";
+    const lines = hits.map((h) => `- 【${h.title}】(${h.type}) ${h.content}`);
+    return `【相关长期资产（命中用户问题关键词，回答时优先参考复用）】\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
+
 /* ── 工具执行（直连 DB，不走 HTTP） ── */
 
 async function executeTool(name: string, args: any): Promise<{ result: unknown; notice?: string }> {
@@ -599,7 +628,9 @@ export async function POST(req: Request) {
 
   const pageCtx = await buildPageContext(pathname);
   const senseCtx = await buildSenseContext();
-  const systemPrompt = `${BASE_SYSTEM}\n\n${pageCtx}\n${senseCtx}`;
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const assetCtx = await buildAssetContext(String(lastUser?.content ?? ""));
+  const systemPrompt = `${BASE_SYSTEM}\n\n${pageCtx}\n${senseCtx}\n${assetCtx}`;
 
   const toolResults: { name: string; notice?: string }[] = [];
   let finalContent = "";

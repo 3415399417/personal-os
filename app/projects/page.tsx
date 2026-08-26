@@ -7,7 +7,7 @@ import { PageHead } from "@/components/common/PageHead";
 import { Modal } from "@/components/common/Modal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { IncubateModal } from "@/components/common/IncubateModal";
-import { createProject, generateProjectArchive, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
+import { createProject, generateProjectArchive, generateProjectReview, getProjects, importProjects, scanProjectsDir } from "@/lib/api";
 import type { Project, ProjectStatus } from "@/types";
 
 const STATUSES: ProjectStatus[] = ["进行中", "待开始", "已完成", "暂停"];
@@ -34,6 +34,7 @@ export default function ProjectsPage() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [importStatus, setImportStatus] = useState<"active" | "completed">("active");
   const [genArchive, setGenArchive] = useState(true);
+  const [genReview, setGenReview] = useState(true);
   const [importing, setImporting] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -71,13 +72,17 @@ export default function ProjectsPage() {
       .then((created) => {
         setImportOpen(false);
         window.dispatchEvent(new Event("betterlife:data-changed"));
-        // 后台逐个生成项目档案（串行避免并发打爆 API；失败静默跳过）
-        if (genArchive && created.length > 0) {
+        // 后台逐个生成项目档案 + 复盘（串行避免并发打爆 API；失败静默跳过）
+        if (created.length > 0) {
           const queue = [...created];
           const next = () => {
             const p = queue.shift();
             if (!p) return;
-            generateProjectArchive(p.id)
+            const step = genArchive
+              ? generateProjectArchive(p.id).catch(() => {})
+              : Promise.resolve();
+            step
+              .then(() => (genReview ? generateProjectReview(p.id).catch(() => {}) : Promise.resolve()))
               .catch(() => {})
               .finally(() => {
                 window.dispatchEvent(new Event("betterlife:data-changed"));
@@ -160,15 +165,21 @@ export default function ProjectsPage() {
                 <h3 className="mini-card-title">{p.name}</h3>
                 <p className="mini-card-desc">{p.desc}</p>
                 <div className="mini-card-foot">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="progress-label">
-                      <span>任务 {done}/{total}</span>
-                      <b className="num">{p.progress}%</b>
+                  {p.status === "已完成" ? (
+                    <div style={{ fontSize: 11.5, color: "var(--accent-deep)", fontWeight: 600 }}>
+                      ✅ 已完成 · 档案与复盘见项目页
                     </div>
-                    <div className="progress">
-                      <i style={{ width: `${p.progress}%` }} />
+                  ) : (
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="progress-label">
+                        <span>任务 {done}/{total}</span>
+                        <b className="num">{p.progress}%</b>
+                      </div>
+                      <div className="progress">
+                        <i style={{ width: `${p.progress}%` }} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className="mini-card-meta">
                   {p.stage} · {p.updatedAt}
@@ -287,6 +298,15 @@ export default function ProjectsPage() {
           />
           <b>✨ 自动生成项目档案</b>
           <em>AI 读取 README/代码文档，总结成项目笔记（有真实依据，导入后后台生成，多个项目需几分钟）</em>
+        </label>
+        <label className="incubate-asset import-gen-archive" style={{ marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            checked={genReview}
+            onChange={(e) => setGenReview(e.target.checked)}
+          />
+          <b>✨ 自动生成项目复盘</b>
+          <em>基于项目档案由 AI 提炼亮点/不足/下一步，沉淀到复盘页（需先生成档案）</em>
         </label>
         <ul className="import-dir-list">
           {dirs.length === 0 ? (

@@ -30,6 +30,7 @@ model Project {
   resources   Resource[]
   assets      Asset[]
   conversations AiConversation[]
+  frictionLogs FrictionLog[]
 }
 
 // ── 任务 ──
@@ -51,6 +52,7 @@ model Task {
 
   project       Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   progressEvents ProgressEvent[]
+  frictionLogs   FrictionLog[]
 }
 
 // ── 进度事件（完成依据时间线：文件命中 / 状态变化 / 确认完成） ──
@@ -64,6 +66,45 @@ model ProgressEvent {
   createdAt DateTime @default(now())
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// ── 通知（系统自动事件汇总：待办过期/提醒到点/项目完成/备份/AI 日报/GitHub 情报） ──
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   @default("system") // todo_overdue(动态不存) | reminder_due | project_done | backup_done | report_ready | github_update
+  title     String
+  body      String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ── GitHub 情报检测快照（对比上次拉取，发现新增写通知） ──
+model GithubCheck {
+  id        String   @id @default("last")
+  hotIds    String   @default("[]") // 热门仓库 id JSON
+  newsIds   String   @default("[]") // 技术新闻 id JSON
+  updatedAt DateTime @updatedAt
+}
+
+// ── 学习时长（系统使用计时：打开 personal-os 即计时，关闭停止，按天累加） ──
+model DailyUsage {
+  id          String    @id @default(cuid())
+  date        String    @unique // YYYY-MM-DD
+  seconds     Int       @default(0)
+  lastTickAt  DateTime? // 最近一次心跳，用于去重与兜底结算
+  updatedAt   DateTime  @updatedAt
+}
+
+// ── 摩擦日志（任务执行卡点/踩坑记录，喂给复盘） ──
+model FrictionLog {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String?
+  projectId String?
+  createdAt DateTime @default(now())
+
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // ── 笔记 ──
@@ -111,6 +152,16 @@ model LearningRecord {
   content   String   @default("")
   progress  Int      @default(0) // 0-100
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── 个人资料（单行，id 固定 "main"）：姓名/身份/焦点/头像，存数据库 → 换浏览器不丢 ──
+model Profile {
+  id      String  @id @default("main")
+  name    String  @default("")
+  role    String  @default("外贸创业者")
+  focus   String  @default("外贸AI系统搭建")
+  avatar  String  @default("")
   updatedAt DateTime @updatedAt
 }
 

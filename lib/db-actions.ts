@@ -199,8 +199,16 @@ function noteTypeKey(type: string): string {
 
 /* ── Dashboard ── */
 
+function todayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export async function getDashboard(): Promise<DashboardData> {
-  const [tasks, projects, notes, resources, learning, assets, reminders] = await Promise.all([
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7)); // 本周一 00:00
+  const [tasks, projects, notes, resources, learning, assets, reminders, weekNotes, usageRows] = await Promise.all([
     prisma.task.findMany(),
     prisma.project.findMany(),
     prisma.note.findMany({ where: { projectId: null }, orderBy: { createdAt: "desc" }, take: 6 }),
@@ -208,6 +216,8 @@ export async function getDashboard(): Promise<DashboardData> {
     prisma.learningRecord.findMany(),
     prisma.asset.findMany(),
     prisma.reminder.findMany({ orderBy: { remindAt: "asc" } }),
+    prisma.note.count({ where: { createdAt: { gte: weekStart } } }),
+    prisma.dailyUsage.findMany({ orderBy: { date: "desc" }, take: 7 }),
   ]);
   // 已完成项目沉底（与 getProjects 排序一致），其余按更新时间倒序
   projects.sort((a, b) => {
@@ -295,8 +305,8 @@ export async function getDashboard(): Promise<DashboardData> {
       time: formatTime(n.createdAt),
     })),
     learning: {
-      percent: targetMinutes > 0 ? Math.min(100, Math.round((learnedToday / targetMinutes) * 100)) : 0,
-      learnedMinutes: learnedToday,
+      percent: 0,
+      learnedMinutes: usageRows.reduce((s, r) => s + r.seconds, 0) / 60,
       targetMinutes,
       planCount: learning.length,
       cardCount: notes.length,
@@ -305,8 +315,10 @@ export async function getDashboard(): Promise<DashboardData> {
         const active = learning.filter((l) => l.progress > 0 && l.progress < 100);
         return active.length > 0 ? Math.round(active.reduce((s, l) => s + l.progress, 0) / active.length) : 0;
       })(),
-      reviewToday: 0, // TODO: 复习功能未做，接入后统计今日复习的知识卡片数
-      reviewProgress: 0, // TODO: 复习功能未做，接入后统计今日复习进度
+      usageTodaySeconds: usageRows.find((r) => r.date === todayKey())?.seconds ?? 0,
+      usageWeekSeconds: usageRows.reduce((s, r) => s + r.seconds, 0),
+      weekNotesCount: weekNotes,
+      assetCount: assets.length,
       plans: learning.slice(0, 2).map((l) => ({
         id: l.id,
         title: l.title,
@@ -408,12 +420,21 @@ export async function getDashboard(): Promise<DashboardData> {
 
 export async function getTodos(): Promise<SidebarTodo[]> {
   // 侧边栏待办 = 个人快速待办（不关联项目）；项目任务只在项目详情页展示，互不混杂
+  // 排序：倒序（新添加的在上，前端再按 今日/过期/已完成 分组）
   const tasks = await prisma.task.findMany({
     where: { projectId: null },
-    orderBy: [{ isTodayFocus: "desc" }, { createdAt: "asc" }],
-    take: 20,
+    orderBy: [{ isTodayFocus: "desc" }, { createdAt: "desc" }],
+    take: 50,
+    select: { id: true, title: true, status: true, createdAt: true },
   });
-  return tasks.map((t) => ({ id: t.id, text: t.title, done: t.status === "completed" }));
+  const keyOf = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return tasks.map((t) => ({
+    id: t.id,
+    text: t.title,
+    done: t.status === "completed",
+    createdDate: keyOf(t.createdAt),
+  }));
 }
 
 export async function createTodo(text: string): Promise<SidebarTodo> {
@@ -440,6 +461,70 @@ export async function getNotifications() {
     title: r.title,
     meta: r.content || (r.remindAt ? formatTime(r.remindAt) : ""),
   }));
+}
+
+/* ── 通知中心（系统自动事件汇总） ── */
+
+export async function createNotification(input: { type: string; title: string; body?: string }): Promise<void> {
+  await prisma.notification.create({
+    data: { type: input.type, title: input.title, body: input.body ?? "" },
+  });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await prisma.notification.updateMany({ where: { read: false }, data: { read: true } });
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  await prisma.notification.delete({ where: { id } });
+}
+
+export async function clearAllNotifications(): Promise<void> {
+  await prisma.notification.deleteMany({});
+}
+
+/**
+ * 铃铛数据：未读数 + 列表。
+ * 列表 = 动态「待办过期」（实时算，不落库）置顶 + 静态通知（倒序 20 条）。
+ */
+export async function getNotificationsForBell(): Promise<{
+  unreadCount: number;
+  items: { id: string; type: string; title: string; body: string; time: string; read: boolean }[];
+}> {
+  // 动态：过期待办（今天之前创建、未完成）
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const overdue = await prisma.task.findMany({
+    where: { projectId: null, status: { not: "completed" }, createdAt: { lt: todayStart } },
+    orderBy: { createdAt: "asc" },
+    take: 10,
+    select: { title: true, createdAt: true },
+  });
+  const overdueItems = overdue.length
+    ? [
+        {
+          id: "__overdue__",
+          type: "todo_overdue",
+          title: `🔥 ${overdue.length} 条待办已过期`,
+          body: overdue.slice(0, 3).map((t) => t.title).join("、") + (overdue.length > 3 ? ` 等 ${overdue.length} 条` : ""),
+          time: "待处理",
+          read: false,
+        },
+      ]
+    : [];
+
+  const rows = await prisma.notification.findMany({ orderBy: { createdAt: "desc" }, take: 20 });
+  const items = rows.map((n) => ({
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    body: n.body,
+    time: formatTime(n.createdAt),
+    read: n.read,
+  }));
+  const unreadCount = (await prisma.notification.count({ where: { read: false } })) + (overdue.length > 0 ? 1 : 0);
+  return { unreadCount, items: [...overdueItems, ...items] };
 }
 
 /* ── 任务 ── */
@@ -842,6 +927,99 @@ export async function generateProjectArchive(projectId: string) {
   return { id: note.id, title: note.title, type: note.type, time: formatTime(note.createdAt) };
 }
 
+/**
+ * AI 生成项目复盘（导入历史项目自动沉淀用）
+ * 素材：项目档案笔记（generateProjectArchive 产物）→ DeepSeek 生成复盘并落库
+ * 去重：已有同名「项目名 · 项目复盘」则跳过
+ */
+export async function generateProjectReview(projectId: string): Promise<{ id: string; title: string; skipped?: boolean }> {
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) throw new Error("项目不存在");
+
+  const title = `${project.name} · 项目复盘`;
+  const dup = await prisma.review.findFirst({ where: { title } });
+  if (dup) return { id: dup.id, title, skipped: true };
+
+  // 素材：优先取项目档案笔记；没有则用项目描述
+  const archive = await prisma.note.findFirst({
+    where: { projectId: project.id, title: { contains: "项目档案" } },
+    orderBy: { createdAt: "desc" },
+  });
+  const material = archive?.content
+    ? `【项目档案】\n${archive.content.slice(0, 3000)}`
+    : project.description
+      ? `【项目描述】\n${project.description}`
+      : "";
+  if (!material.trim()) throw new Error("项目没有档案笔记/描述，先生成档案");
+
+  const API_URL = process.env.DEEPSEEK_API_URL ?? "https://api.deepseek.com";
+  const API_KEY = process.env.DSH_DEEPSEEK_KEY;
+  if (!API_KEY) throw new Error("未配置 DSH_DEEPSEEK_KEY");
+
+  const prompt = `你是项目复盘教练。根据下面已完成项目「${project.name}」的档案，写一份简洁复盘。
+只输出 JSON（不要其他文字）：{"summary": "总结 2-3 句", "wins": ["亮点1", "亮点2"], "losses": ["不足1"], "next": ["沉淀/复用建议1"]}
+要求：只基于提供内容，不编造；亮点指技术方案/架构/可复用经验；不足如无内容就写"（未在文档中说明）"。
+\n${material}`;
+
+  const res = await fetch(`${API_URL}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${API_KEY}` },
+    body: JSON.stringify({
+      model: "deepseek-v4-flash",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 800,
+      temperature: 0.4,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`AI 服务错误 ${res.status}`);
+  const json = await res.json();
+  const text = (json?.choices?.[0]?.message?.content ?? "").trim();
+  if (!text) throw new Error("AI 返回为空");
+
+  let parsed: { summary?: string; wins?: string[]; losses?: string[]; next?: string[] } = {};
+  try {
+    const m = text.match(/\{[\s\S]*\}/);
+    parsed = m ? JSON.parse(m[0]) : {};
+  } catch {
+    parsed = {};
+  }
+  const period = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`;
+  const r = await prisma.review.create({
+    data: {
+      title,
+      period,
+      summary: parsed.summary ?? text,
+      achievements: Array.isArray(parsed.wins) ? parsed.wins.join("\n") : "",
+      problems: Array.isArray(parsed.losses) ? parsed.losses.join("\n") : "",
+      nextPlan: Array.isArray(parsed.next) ? parsed.next.join("\n") : "",
+    },
+  });
+  return { id: r.id, title: r.title };
+}
+
+/** 项目时间线：聚合该项目所有任务的进度事件（含项目创建节点），倒序 */
+export async function getProjectTimeline(projectId: string) {
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return [];
+  const events = await prisma.progressEvent.findMany({
+    where: { OR: [{ projectId }, { task: { projectId } }] },
+    include: { task: { select: { title: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  const lines = events.map((e) => ({
+    id: e.id,
+    type: e.type,
+    detail: e.detail,
+    taskTitle: e.task?.title ?? "",
+    time: formatTime(e.createdAt),
+  }));
+  // 项目创建作为起点
+  lines.push({ id: "created", type: "project_created", detail: `项目「${project.name}」创建`, taskTitle: "", time: formatTime(project.createdAt) });
+  return lines;
+}
+
 /* ── 笔记 ── */
 
 export async function getNotes(): Promise<Note[]> {
@@ -897,7 +1075,87 @@ export async function updateNote(
   };
 }
 
+/** 笔记挂靠到项目（孤儿档案一键归属）；projectId 传 null 解除挂靠 */
+export async function attachNoteToProject(noteId: string, projectId: string | null): Promise<Note | null> {
+  const n = await prisma.note.update({ where: { id: noteId }, data: { projectId } });
+  return {
+    id: n.id,
+    title: n.title,
+    content: n.content,
+    type: noteTypeLabel(n.type),
+    time: formatTime(n.createdAt),
+    projectId: n.projectId ?? undefined,
+  };
+}
+
+/* ── 摩擦日志（任务卡点记录，喂给复盘） ── */
+
+export interface FrictionLogItem {
+  id: string;
+  content: string;
+  taskId: string | null;
+  projectId: string | null;
+  taskTitle: string;
+  time: string;
+}
+
+export async function createFrictionLog(input: { content: string; taskId?: string; projectId?: string }): Promise<FrictionLogItem> {
+  const content = (input.content ?? "").trim();
+  if (!content) throw new Error("摩擦内容不能为空");
+  const f = await prisma.frictionLog.create({
+    data: { content, taskId: input.taskId ?? null, projectId: input.projectId ?? null },
+  });
+  return {
+    id: f.id,
+    content: f.content,
+    taskId: f.taskId,
+    projectId: f.projectId,
+    taskTitle: "",
+    time: formatTime(f.createdAt),
+  };
+}
+
+export async function getFrictionLogs(input?: { taskId?: string; projectId?: string; days?: number; limit?: number }): Promise<FrictionLogItem[]> {
+  const days = input?.days && input.days > 0 ? input.days : 7;
+  const rows = await prisma.frictionLog.findMany({
+    where: {
+      ...(input?.taskId ? { taskId: input.taskId } : {}),
+      ...(input?.projectId ? { projectId: input.projectId } : {}),
+      createdAt: { gte: new Date(Date.now() - days * 86400000) },
+    },
+    include: { task: { select: { title: true } } },
+    orderBy: { createdAt: "desc" },
+    take: input?.limit ?? 50,
+  });
+  return rows.map((f) => ({
+    id: f.id,
+    content: f.content,
+    taskId: f.taskId,
+    projectId: f.projectId,
+    taskTitle: f.task?.title ?? "",
+    time: formatTime(f.createdAt),
+  }));
+}
+
+export async function deleteFrictionLog(id: string): Promise<void> {
+  await prisma.frictionLog.delete({ where: { id } });
+}
+
 /* ── 学习 ── */
+
+/** 本周新增笔记（学习中心「本周沉淀」用） */
+export async function getWeekNotes() {
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7)); // 本周一 00:00
+  const rows = await prisma.note.findMany({
+    where: { createdAt: { gte: weekStart } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: { id: true, title: true, type: true, createdAt: true },
+  });
+  return rows.map((r) => ({ id: r.id, title: r.title, type: noteTypeLabel(r.type), time: formatTime(r.createdAt) }));
+}
 
 export async function getLearningRecords(): Promise<LearningRecord[]> {
   const records = await prisma.learningRecord.findMany({ orderBy: { createdAt: "desc" } });
@@ -1089,7 +1347,47 @@ export async function getAssets(): Promise<Asset[]> {
     title: a.title,
     summary: a.content,
     time: formatDate(a.createdAt),
+    projectId: a.projectId ?? undefined,
   }));
+}
+
+/** 项目关联的长期资产（项目详情页用） */
+export async function getProjectAssets(projectId: string) {
+  const rows = await prisma.asset.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((a) => ({
+    id: a.id,
+    kind: (ASSET_TYPE_LABEL[a.type] ?? "SOP") as Asset["kind"],
+    title: a.title,
+    summary: a.content,
+    time: formatDate(a.createdAt),
+    projectId: a.projectId ?? undefined,
+  }));
+}
+
+export async function updateAsset(
+  id: string,
+  patch: { title?: string; content?: string; kind?: string; projectId?: string | null },
+): Promise<Asset | null> {
+  const a = await prisma.asset.update({
+    where: { id },
+    data: {
+      ...(patch.title !== undefined ? { title: patch.title } : {}),
+      ...(patch.content !== undefined ? { content: patch.content } : {}),
+      ...(patch.kind !== undefined ? { type: assetTypeKey(patch.kind) } : {}),
+      ...(patch.projectId !== undefined ? { projectId: patch.projectId } : {}),
+    },
+  });
+  return {
+    id: a.id,
+    kind: (ASSET_TYPE_LABEL[a.type] ?? "SOP") as Asset["kind"],
+    title: a.title,
+    summary: a.content,
+    time: formatDate(a.createdAt),
+    projectId: a.projectId ?? undefined,
+  };
 }
 
 export async function createAsset(input: { title: string; content: string; kind: string; projectId?: string }): Promise<Asset> {

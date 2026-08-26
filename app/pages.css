@@ -164,9 +164,25 @@
   transition: opacity .15s ease, background .15s ease, color .15s ease;
 }
 li:hover > .task-del { opacity: 1; }
+/* 修复：task-del 是 li 的后代（li > div.task-li-row > button），直接子选择器永不命中 → 用后代选择器 */
+li:hover .task-del, .task-li:hover .task-del {
+  opacity: 1;
+  color: var(--fg); /* 悬停行时变深色，确保看得见 */
+}
+/* 学习计划等 div.list-item 列表项同样 hover 浮现 */
+.list-item:hover > .task-del {
+  opacity: 1;
+  color: var(--fg);
+}
+.list-item:hover > .task-del:hover { background: #FEE2E2; color: #DC2626; }
 .task-del:hover { background: #FEE2E2; color: #DC2626; }
-.task-del svg { width: 12px; height: 12px; }
-.task-del:focus-visible { opacity: 1; }
+.task-del svg { width: 13px; height: 13px; }
+.task-del:focus-visible { opacity: 1; color: var(--fg); }
+
+/* 资产卡片等非 li 容器里的删除按钮：卡片 hover 时浮现（避免一直透明不可见） */
+.mini-card .task-del { opacity: 0.45; }
+.mini-card:hover .task-del { opacity: 1; color: var(--fg); }
+.mini-card .task-del:hover { opacity: 1; }
 
 /* ── 列表行（通用） ── */
 .list-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-btn); }
@@ -925,6 +941,62 @@ li:hover > .task-focus { opacity: 1; }
   font-weight: 700;
   color: var(--accent-deep);
 }
+/* 学习卡片副行说明（本周累计/沉淀细节） */
+.study-sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  padding-left: 26px;
+}
+
+/* 学习中心：近 7 天学习时长趋势图 */
+.usage-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 120px;
+  padding: 12px 4px 0;
+}
+.usage-bar-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.usage-bar {
+  width: 100%;
+  max-width: 34px;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--accent-light), var(--accent));
+  opacity: 0.75;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: auto;
+  transition: opacity .15s ease;
+}
+.usage-bar-col:hover .usage-bar { opacity: 1; }
+.usage-bar-col.today .usage-bar {
+  background: linear-gradient(180deg, #C084FC, #7C3AED);
+  opacity: 1;
+}
+.usage-bar-val {
+  font-size: 9.5px;
+  color: var(--accent-deep);
+  font-weight: 700;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.usage-bar-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+.usage-bar-col.today .usage-bar-label { color: var(--accent-deep); font-weight: 700; }
 [data-od-id="card-exec"] .exec-item {
   padding: 3px 0;
 }
@@ -2422,6 +2494,26 @@ li:hover > .task-focus { opacity: 1; }
   color: var(--muted);
   font-weight: 600;
 }
+/* 已完成项目：紧凑标签 */
+.stats-proj-done-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 14px 0 6px;
+}
+.stats-proj-done {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stats-proj-chip {
+  font-size: 11px;
+  color: var(--fg);
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 9px;
+}
 .stats-timeline {
   list-style: none;
   display: flex;
@@ -2632,6 +2724,21 @@ li:hover > .task-focus { opacity: 1; }
 .ev-status_changed .ev-label { color: #B45309; }
 .ev-confirmed .ev-label { color: #10B981; }
 .task-timeline-item .ev-detail { color: var(--fg); word-break: break-all; }
+
+/* 摩擦日志：任务展开区卡点记录 */
+.task-friction-input { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+.task-friction-input .input { flex: 1; min-width: 0; }
+.task-friction-list { display: flex; flex-direction: column; gap: 3px; list-style: none; margin: 0; padding: 0; }
+.task-friction-item {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11px; line-height: 1.5; padding: 2px 0;
+  border-left: 2px solid #F59E0B;
+  padding-left: 8px;
+}
+.task-friction-item .ev-time { flex: none; color: var(--muted); font-size: 10.5px; width: 64px; }
+.task-friction-item .ev-detail { color: var(--fg); word-break: break-all; flex: 1; min-width: 0; }
+.task-friction-item .task-del { flex: none; opacity: 0.45; }
+.task-friction-item .task-del:hover { opacity: 1; }
 
 .scan-notice {
   flex: none; display: flex; align-items: center; gap: 6px;
@@ -2884,4 +2991,23 @@ li:hover > .task-focus { opacity: 1; }
   background: var(--surface-deep);
   color: var(--muted);
   border: 1px solid var(--border);
+}
+
+
+/* ==== Hero streak badge (top-right) ==== */
+.hero-streak {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-light);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
 }

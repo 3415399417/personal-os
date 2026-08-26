@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { createReview } from "@/lib/api";
+import { createReview, createNotification } from "@/lib/api";
 
 /**
  * 自动推送：打开系统时检查并生成日报/周报（存为复盘草稿）。
@@ -51,6 +51,7 @@ export function useAutoReport(onGenerated?: (title: string) => void) {
           if (title) {
             localStorage.setItem(LS_DAY, todayKey());
             onGenerated?.(title);
+            createNotification({ type: "report_ready", title: `📊 ${title}已自动生成`, body: "见复盘页" }).catch(() => {});
           }
         }
         // 周报：周日 21 点后首次打开
@@ -60,6 +61,7 @@ export function useAutoReport(onGenerated?: (title: string) => void) {
           if (title) {
             localStorage.setItem(LS_WEEK, weekKey());
             onGenerated?.(title);
+            createNotification({ type: "report_ready", title: `📊 ${title}已自动生成`, body: "见复盘页" }).catch(() => {});
           }
         }
       } catch {

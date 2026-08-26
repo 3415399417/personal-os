@@ -33,6 +33,16 @@ export default function StatsPage() {
   const maxDone = Math.max(1, ...(data?.days.map((d) => d.done) ?? [1]));
   const totalTasks = (data?.days ?? []).reduce((s, d) => s + d.done, 0);
 
+  // 项目进度分组：进行中/待开始/暂停 → 进度条；已完成 → 紧凑标签
+  const STATUS_LABEL: Record<string, string> = {
+    active: "进行中",
+    paused: "待开始",
+    completed: "已完成",
+    archived: "暂停",
+  };
+  const activeProjs = (data?.projects ?? []).filter((p) => p.status !== "completed");
+  const doneProjs = (data?.projects ?? []).filter((p) => p.status === "completed");
+
   return (
     <AppShell>
       <div className="page">
@@ -79,7 +89,7 @@ export default function StatsPage() {
                 </div>
               </section>
 
-              {/* 项目进度 */}
+              {/* 项目进度：进行中/待开始带进度条，已完成紧凑标签 */}
               <section className="panel">
                 <div className="panel-head">
                   <h2 className="panel-title">项目进度</h2>
@@ -87,20 +97,37 @@ export default function StatsPage() {
                 {data.projects.length === 0 ? (
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>暂无项目</div>
                 ) : (
-                  <ul className="stats-projects">
-                    {data.projects.map((p) => (
-                      <li key={p.name}>
-                        <div className="stats-proj-head">
-                          <b>{p.name}</b>
-                          <span className="badge">{p.status === "active" ? "进行中" : p.status === "completed" ? "已完成" : p.status}</span>
+                  <>
+                    {activeProjs.length > 0 && (
+                      <ul className="stats-projects">
+                        {activeProjs.map((p) => (
+                          <li key={p.name}>
+                            <div className="stats-proj-head">
+                              <b>{p.name}</b>
+                              <span className="badge">{STATUS_LABEL[p.status] ?? p.status}</span>
+                            </div>
+                            <div className="progress" style={{ height: 5 }}>
+                              <i style={{ width: `${p.progress}%` }} />
+                            </div>
+                            <span className="stats-proj-num">{p.progress}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {activeProjs.length === 0 && (
+                      <div style={{ fontSize: 12, color: "var(--muted)", padding: "2px 0 8px" }}>暂无进行中的项目</div>
+                    )}
+                    {doneProjs.length > 0 && (
+                      <>
+                        <div className="stats-proj-done-title">✅ 已完成（{doneProjs.length}）</div>
+                        <div className="stats-proj-done">
+                          {doneProjs.map((p) => (
+                            <span key={p.name} className="stats-proj-chip">{p.name}</span>
+                          ))}
                         </div>
-                        <div className="progress" style={{ height: 5 }}>
-                          <i style={{ width: `${p.progress}%` }} />
-                        </div>
-                        <span className="stats-proj-num">{p.progress}%</span>
-                      </li>
-                    ))}
-                  </ul>
+                      </>
+                    )}
+                  </>
                 )}
               </section>
 

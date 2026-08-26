@@ -20,13 +20,28 @@ import type { DashboardData } from "@/types";
  */
 export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [streak, setStreak] = useState(0);
 
   const reload = () => getDashboard().then(setData);
 
+  // 连续使用天数（Hero 右上角徽章）：来自 /api/space
+  const loadStreak = () => {
+    fetch("/api/space")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setStreak(d.today?.streak ?? 0);
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     reload();
+    loadStreak();
     // 全局数据变更事件：侧边栏/其他页面操作后实时刷新首页卡片（无需手动刷新页面）
-    const onDataChanged = () => reload();
+    const onDataChanged = () => {
+      reload();
+      loadStreak();
+    };
     window.addEventListener("betterlife:data-changed", onDataChanged);
     return () => window.removeEventListener("betterlife:data-changed", onDataChanged);
   }, []);
@@ -34,7 +49,7 @@ export function Dashboard() {
   return (
     <div className="page">
       <div className="page-scroll">
-        <Hero focus={data?.focus} />
+        <Hero focus={data?.focus} streak={streak} />
 
         {/* Layer 2 · row 1 */}
         <section className="grid-row" data-od-id="row-today">
@@ -48,7 +63,7 @@ export function Dashboard() {
 
         {/* Layer 3 · row 2 */}
         <section className="grid-row" data-od-id="row-growth">
-          <StudyCard learning={data?.learning ?? { percent: 0, learnedMinutes: 0, targetMinutes: 60, planCount: 0, cardCount: 0, activePlanCount: 0, activePlanProgress: 0, reviewToday: 0, reviewProgress: 0, plans: [] }} />
+          <StudyCard learning={data?.learning ?? { percent: 0, learnedMinutes: 0, targetMinutes: 60, planCount: 0, cardCount: 0, activePlanCount: 0, activePlanProgress: 0, reviewToday: 0, reviewProgress: 0, usageTodaySeconds: 0, usageWeekSeconds: 0, weekNotesCount: 0, assetCount: 0, plans: [] }} />
           <NotesCard notes={data?.notes ?? []} onChanged={reload} />
           <LifeCard />
         </section>

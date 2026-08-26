@@ -63,7 +63,7 @@ export function Dashboard() {
 
         {/* Layer 3 · row 2 */}
         <section className="grid-row" data-od-id="row-growth">
-          <StudyCard learning={data?.learning ?? { percent: 0, learnedMinutes: 0, targetMinutes: 60, planCount: 0, cardCount: 0, activePlanCount: 0, activePlanProgress: 0, reviewToday: 0, reviewProgress: 0, usageTodaySeconds: 0, usageWeekSeconds: 0, weekNotesCount: 0, assetCount: 0, plans: [] }} />
+          <StudyCard learning={data?.learning ?? { percent: 0, learnedMinutes: 0, targetMinutes: 60, planCount: 0, cardCount: 0, activePlanCount: 0, activePlanProgress: 0, usageTodaySeconds: 0, usageWeekSeconds: 0, weekNotesCount: 0, assetCount: 0, plans: [] }} />
           <NotesCard notes={data?.notes ?? []} onChanged={reload} />
           <LifeCard />
         </section>

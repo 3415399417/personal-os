@@ -34,8 +34,8 @@ function loadSettings(): Settings {
   return DEFAULT_SETTINGS;
 }
 
-/** 应用全局设置到 <html>，供所有页面使用 */
-export function applySettings(s: Settings) {
+/** 应用全局设置到 localStorage 并广播，供侧边栏等监听 */
+function applySettings(s: Settings) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
   } catch {

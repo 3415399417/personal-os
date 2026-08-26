@@ -57,8 +57,17 @@ function relTime(ts: number): string {
 async function fetchJson(url: string, timeoutMs = 12000): Promise<any> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  // GitHub token（可选）：配置后限流从 60 次/时提升到 5000 次/时，避免 403
+  const token = process.env.GITHUB_TOKEN;
   try {
-    const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/vnd.github+json" }, signal: ctrl.signal });
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": UA,
+        Accept: "application/vnd.github+json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      signal: ctrl.signal,
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {

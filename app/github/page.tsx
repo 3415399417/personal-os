@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHead } from "@/components/common/PageHead";
+import { openExternal } from "@/lib/openExternal";
 import { useEffect, useState } from "react";
 
 interface RepoItem {
@@ -78,7 +79,7 @@ export default function GithubPage() {
     };
   }, [tab, repoType]);
 
-  const open = (url: string) => window.open(url, "_blank", "noopener");
+  const open = (url: string) => openExternal(url);
 
   return (
     <AppShell>

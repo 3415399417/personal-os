@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createInboxItem, createTask } from "@/lib/api";
+import { useTauriEvent } from "@/hooks/useTauriEvent";
 
 /**
  * 剪贴板采集（桌面版）：Tauri 监听到复制内容后 emit betterlife:clipboard-copied，
@@ -14,21 +15,14 @@ export function ClipboardCapture() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const busyRef = useRef(false);
 
-  useEffect(() => {
-    const onCopy = (e: Event) => {
-      const text = String((e as CustomEvent).detail ?? "").trim();
-      if (!text || busyRef.current) return;
-      setItem(text);
-      // 15 秒无操作自动消失
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setItem(null), 15_000);
-    };
-    window.addEventListener("betterlife:clipboard-copied", onCopy as EventListener);
-    return () => {
-      window.removeEventListener("betterlife:clipboard-copied", onCopy as EventListener);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  // 桌面版剪贴板监听（Tauri Rust emit → 这里接收）
+  useTauriEvent("betterlife:clipboard-copied", (payload) => {
+    const text = String(payload ?? "").trim();
+    if (!text || busyRef.current) return;
+    setItem(text);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setItem(null), 15_000);
+  });
 
   const save = async (kind: "inbox" | "task") => {
     if (!item) return;

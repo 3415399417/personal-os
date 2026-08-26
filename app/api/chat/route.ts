@@ -191,6 +191,22 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_friction_log",
+      description: "记录一条摩擦日志（执行任务时遇到的卡点/问题/阻碍，供复盘使用）。如用户说「记一下：今天卡在 X 问题」时调用。",
+      parameters: {
+        type: "object",
+        properties: {
+          content: { type: "string", description: "摩擦内容描述" },
+          task_id: { type: "string", description: "关联任务 id，可选" },
+          project_id: { type: "string", description: "关联项目 id，可选" },
+        },
+        required: ["content"],
+      },
+    },
+  },
   // ── 修改 ──
   {
     type: "function",
@@ -522,6 +538,10 @@ async function executeTool(name: string, args: any): Promise<{ result: unknown; 
     case "create_asset": {
       const a = await db.createAsset({ title: args.title, content: args.content, kind: args.kind });
       return { result: { id: a.id, title: a.title, kind: a.kind }, notice: `已创建资产「${a.title}」` };
+    }
+    case "create_friction_log": {
+      const f = await db.createFrictionLog({ content: args.content, taskId: args.task_id, projectId: args.project_id });
+      return { result: { id: f.id }, notice: `已记录摩擦日志：${args.content.slice(0, 40)}${args.content.length > 40 ? "…" : ""}` };
     }
 
     case "update_task_status": {

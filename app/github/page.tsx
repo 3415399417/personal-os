@@ -36,6 +36,7 @@ interface NoticeItem {
 
 type Tab = "repos" | "news";
 type RepoType = "plugin" | "model" | "agent" | "harness";
+type RepoSort = "stars" | "updated";
 
 const REPO_TYPES: { key: RepoType; label: string }[] = [
   { key: "plugin", label: "插件" },
@@ -44,9 +45,18 @@ const REPO_TYPES: { key: RepoType; label: string }[] = [
   { key: "harness", label: "Harness" },
 ];
 
+/** 各类别的 GitHub 站内搜索关键词提示 */
+const REPO_QUERIES_HINT: Record<RepoType, string> = {
+  plugin: "plugin OR extension OR addon",
+  model: "gguf OR llamafile OR quantization",
+  agent: "agent framework OR agentic",
+  harness: "dsh-plugin",
+};
+
 export default function GithubPage() {
   const [tab, setTab] = useState<Tab>("repos");
   const [repoType, setRepoType] = useState<RepoType>("plugin");
+  const [sort, setSort] = useState<RepoSort>("stars");
   const [repos, setRepos] = useState<RepoItem[]>([]);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -57,7 +67,7 @@ export default function GithubPage() {
     let alive = true;
     setLoading(true);
     setError("");
-    const query = tab === "repos" ? `tab=repos&type=${repoType}` : "tab=news";
+    const query = tab === "repos" ? `tab=repos&type=${repoType}&sort=${sort}` : "tab=news";
     fetch(`/api/github?${query}`)
       .then((r) => r.json())
       .then((d) => {
@@ -77,7 +87,7 @@ export default function GithubPage() {
     return () => {
       alive = false;
     };
-  }, [tab, repoType]);
+  }, [tab, repoType, sort]);
 
   const open = (url: string) => openExternal(url);
 
@@ -103,16 +113,41 @@ export default function GithubPage() {
 
         <div className="page-scroll">
           {tab === "repos" && (
-            <div className="github-subtabs">
-              {REPO_TYPES.map((t) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <div className="github-subtabs">
+                {REPO_TYPES.map((t) => (
+                  <button
+                    key={t.key}
+                    className={`github-subtab ${repoType === t.key ? "active" : ""}`}
+                    onClick={() => setRepoType(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {/* 排序切换：热门 / 最新 */}
+              <div className="github-sort">
                 <button
-                  key={t.key}
-                  className={`github-subtab ${repoType === t.key ? "active" : ""}`}
-                  onClick={() => setRepoType(t.key)}
+                  className={`github-subtab ${sort === "stars" ? "active" : ""}`}
+                  onClick={() => setSort("stars")}
                 >
-                  {t.label}
+                  🔥 热门
                 </button>
-              ))}
+                <button
+                  className={`github-subtab ${sort === "updated" ? "active" : ""}`}
+                  onClick={() => setSort("updated")}
+                >
+                  🕐 最新
+                </button>
+              </div>
+              {/* 跳到 GitHub 站内搜索 */}
+              <button
+                className="btn btn-soft"
+                style={{ height: 28, fontSize: 12, padding: "0 12px", marginLeft: "auto" }}
+                onClick={() => openExternal(`https://github.com/search?q=${encodeURIComponent(REPO_QUERIES_HINT[repoType])}&type=repositories`)}
+              >
+                GitHub 站内搜索 →
+              </button>
             </div>
           )}
           {loading ? (

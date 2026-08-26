@@ -39,13 +39,14 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const tab = url.searchParams.get("tab") ?? "repos";
   const type = url.searchParams.get("type") ?? "plugin";
+  const sort = url.searchParams.get("sort") ?? undefined;
   try {
     if (tab === "news") {
       return NextResponse.json({ ok: true, tab, type, items: await getNews() });
     }
     // Harness：插件 + 官方通知
-    const [repos, notices] = await Promise.all([getRepos(type), type === "harness" ? getNotices() : Promise.resolve([])]);
-    return NextResponse.json({ ok: true, tab, type, items: repos, notices });
+    const [repos, notices] = await Promise.all([getRepos(type, sort), type === "harness" ? getNotices() : Promise.resolve([])]);
+    return NextResponse.json({ ok: true, tab, type, sort: sort ?? null, items: repos, notices });
   } catch (err) {
     console.error("[api/github] failed:", err);
     return NextResponse.json(

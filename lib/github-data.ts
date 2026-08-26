@@ -75,12 +75,13 @@ async function fetchJson(url: string, timeoutMs = 12000): Promise<any> {
   }
 }
 
-/** 热门仓库：GitHub Search 按 star 排序（分类：插件/模型/Agent/Harness） */
-export async function getRepos(type: string): Promise<unknown[]> {
+/** 热门仓库：GitHub Search 按 star 排序（分类：插件/模型/Agent/Harness）
+ * sort: stars（热门）| updated（最新），默认 stars；harness 默认 updated */
+export async function getRepos(type: string, sort?: string): Promise<unknown[]> {
   const q = encodeURIComponent(REPO_QUERIES[type] ?? REPO_QUERIES.agent);
-  // Harness 社区插件按最新更新排序；其余分类按 star 排序
-  const sort = type === "harness" ? "updated" : "stars";
-  const url = `${GH_SEARCH}?q=${q}&sort=${sort}&order=desc&per_page=18`;
+  // 默认：Harness 社区插件按最新更新排序；其余分类按 star 排序（可显式传入覆盖）
+  const sortBy = sort ?? (type === "harness" ? "updated" : "stars");
+  const url = `${GH_SEARCH}?q=${q}&sort=${sortBy}&order=desc&per_page=18`;
   const data = await fetchJson(url);
   const items: any[] = data.items ?? [];
   return items.map((r) => ({

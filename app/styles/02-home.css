@@ -1,0 +1,803 @@
+/* ═══════════════════════════════════════════════════════════════
+   全局字体：全部改为楷体（用户确认 2026-08-21 17:40）
+   覆盖 :root 的 --font，全站文字（body 继承链）统一楷体
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --font: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+
+/* Hero 标题字距拉大（0.12em → 0.2em）+ 副标题明确 12px（用户确认 2026-08-21） */
+.hero-title {
+  letter-spacing: 0.2em;
+}
+.hero-sub {
+  font-size: 12px;
+}
+/* Hero 焦点卡 meta 行（来源/阶段/进度/任务）：11px → 12px → 13px（用户确认 2026-08-21） */
+.focus-meta {
+  font-size: 13px;
+}
+/* Hero 卡片内字体整体放大（用户确认 2026-08-21 18:25） */
+.card-eyebrow { font-size: 16px; } /* 今日最重要 */
+.tag { font-size: 12px; } /* 今日项目 */
+.focus-title { font-size: 16px; } /* BetterLife AI */
+.focus-desc { font-size: 13px; } /* 个人管理系统 */
+.focus-list span { font-size: 13px; } /* 主任务 / 状态 / 下一步 */
+.focus-list b { font-size: 14px; } /* 真实数据使用 / 开始推进这项任务 */
+.focus-list .state { font-size: 12px; } /* 进行中 */
+.focus-btns .btn { font-size: 13px; } /* 继续工作 / 提交成果 */
+
+/* ═══════════════════════════════════════════════════════════════
+   首页卡片统一字号规范（用户确认 v3 2026-08-21 17:46）
+   楷体 · 主标题 18px/粗 · 主条目 14px/黑/加粗 · 状态分类 14px/黑 · 辅助信息 12px/灰
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 楷体字体栈（Windows KaiTi / Mac STKaiti） */
+.card-title,
+[data-od-id="card-projects"] .proj-name-text b,
+[data-od-id="card-study"] .proj-name-text b,
+[data-od-id="card-notes"] .note-item b,
+[data-od-id="card-life"] .life-item b,
+[data-od-id="card-assets"] .asset-item b,
+.quick-item,
+.ai-tag,
+.exec-cats li,
+[data-od-id="card-projects"] .proj-line .num,
+[data-od-id="card-study"] .proj-line .num,
+.study-meta,
+.study-meta .num,
+.exec-status-list li,
+.exec-status-list b,
+[data-od-id="card-notes"] .note-item em,
+[data-od-id="card-life"] .life-item em,
+[data-od-id="card-assets"] .asset-item .num,
+[data-od-id="card-resources"] .res-cell span,
+.ai-head p {
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+
+/* 1. 卡片标题：18px 粗 楷体 */
+.card-title { font-size: 18px; }
+/* 卡片标题图标（像素图标替换文字标题） */
+.card-title-ico {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: none;
+}
+/* 图标 + 标题文字挨着排列 */
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* 2. 主条目文字：14px 黑色加粗 楷体（项目名 / 笔记标题 / 生活条目 / 资产条目 / 快速入口 / AI 标签） */
+[data-od-id="card-projects"] .proj-name-text b,
+[data-od-id="card-study"] .proj-name-text b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+[data-od-id="card-notes"] .note-item b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+[data-od-id="card-life"] .life-item b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+[data-od-id="card-assets"] .asset-item b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+.quick-item {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+.ai-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* 3. 状态/分类标签（今日执行）：14px 黑色加粗 楷体 */
+.exec-cats li {
+  font-size: 14px;
+  color: #111;
+  font-weight: 700;
+}
+
+/* 4. 辅助信息：12px 灰色 楷体（计数 / 时间戳 / 百分比 / meta，明显小于主条目） */
+[data-od-id="card-projects"] .proj-line .num,
+[data-od-id="card-study"] .proj-line .num {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.study-meta {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.study-meta .num {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+/* 提高特异性：.study-meta 是 span，需压过原型 .proj-line span 紫色规则 */
+.proj-line .study-meta {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.proj-line .study-meta .num {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.exec-status-list li,
+.exec-status-list b {
+  font-size: 12px;
+  color: var(--muted);
+}
+.exec-status-list b { font-weight: 600; }
+[data-od-id="card-notes"] .note-item em { font-size: 12px; }
+[data-od-id="card-life"] .life-item em { font-size: 12px; }
+[data-od-id="card-assets"] .asset-item .num {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+[data-od-id="card-resources"] .res-cell span { font-size: 12px; }
+.ai-head p { font-size: 12px; }
+
+/* 生活与自我（参考图样式）：粉色爱心标题 + 彩色圆形图标行 + 右下角插画 + 底部寄语 */
+.life-title-ico {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #FCE7F3;
+  color: #EC4899;
+  display: grid;
+  place-items: center;
+}
+.life-title-ico svg {
+  width: 14px;
+  height: 14px;
+}
+[data-od-id="card-life"] .life-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* 与今日执行一致：顶部排列 */
+  gap: 0;
+  padding: 0;
+}
+[data-od-id="card-life"] .life-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 2px; /* 与今日执行 exec-cats li 一致 */
+  font-size: 14px;
+  color: #111;
+  font-weight: 700;
+  line-height: 1.3;
+  border: none; /* 清掉原型残留的三边实线边框 */
+  border-bottom: 1px dashed var(--border); /* 与今日执行下虚线一致 */
+  border-radius: 0;
+  background: transparent; /* 透明底（覆盖原型 var(--white)） */
+  min-width: 0;
+}
+/* 与今日执行一致：最后一行无虚线 */
+[data-od-id="card-life"] .life-item:last-child {
+  border-bottom: none;
+}
+.life-item-ico {
+  flex: none;
+  width: 22px; /* 与 exec-cat-ico 等像素图标一致 */
+  height: 22px;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  color: #fff;
+}
+[data-od-id="card-life"] .life-item b {
+  flex: none;
+}
+[data-od-id="card-life"] .life-item em {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.life-foot-text {
+  font-size: 12px;
+  color: var(--accent-deep);
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+/* 右下角躺椅插画：与其他卡片右下角图片统一 110px + 半透明置底（今日执行模式） */
+.card > .life-art {
+  width: 110px;
+  height: 110px;
+  right: 6px;
+  bottom: 6px;
+  opacity: 0.5;
+  object-fit: contain;
+}
+/* 其他卡片插画统一规则（学习/资源）：110px 半透明置底，文字浮上层 */
+.card > .study-art,
+.card > .resources-art {
+  width: 110px;
+  height: 110px;
+  right: 6px;
+  bottom: 6px;
+  opacity: 0.5;
+  object-fit: contain;
+}
+/* 学习与成长插画：150px 贴底（与当前项目/最近沉淀一致） */
+.card > .study-art {
+  width: 150px;
+  height: 150px;
+  bottom: 0;
+  object-position: bottom;
+}
+/* 最近沉淀插画：与当前项目一致 150px 贴底 */
+.card > .notes-art {
+  width: 150px;
+  height: 150px;
+  bottom: 0;
+  object-position: bottom;
+}
+/* 当前项目插画：放大到 120px，贴底 */
+.card > .projects-art {
+  width: 120px;
+  height: 120px;
+  bottom: 0;
+  object-position: bottom; /* 图片底部对齐容器底部，人物落地 */
+}
+
+/* 资源中心（参考图样式）：标题蓝文件夹图标 + 7 分类 3+4 两行网格（名称+数字）+ hover 浅灰圆角 */
+.res-title-ico {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #DBEAFE;
+  color: #2563EB;
+  display: grid;
+  place-items: center;
+}
+.res-title-ico svg {
+  width: 15px;
+  height: 15px;
+}
+.res-grid2 {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-content: center; /* 垂直居中，上下留白均匀 */
+  padding: 6px 0;
+}
+/* 参考图布局：第一行 3 个（收集箱/领域库/项目库），第二行 4 个（学习库起） */
+.res-row-cell:nth-child(4) {
+  grid-column: 1;
+}
+/* 模板库（第 7 格）半透明：右下角插画透出，视觉融合（0.72 保证文字可读） */
+.res-row-cell:nth-child(7) {
+  background: rgba(255, 255, 255, 0.72);
+}
+.res-row-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 12px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  min-width: 0;
+  transition: background .15s ease, border-color .15s ease;
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+.res-row-cell:hover {
+  background: #F3F4F6;
+  border-color: var(--accent-light);
+}
+.res-row-cell .num {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* 笔记查看工具栏（字体/字号选择，NoteViewPrefs） */
+.note-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.note-toolbar-label {
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+.note-font-select {
+  height: 26px;
+  font-size: 12px;
+  padding: 0 6px;
+  width: auto;
+  flex: none;
+}
+.note-size-group {
+  display: flex;
+  gap: 4px;
+}
+.note-size-btn {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--fg);
+  background: var(--white);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.note-size-btn.active {
+  background: var(--accent-deep);
+  color: var(--white);
+  border-color: var(--accent-deep);
+}
+
+/* 5. 长期资产库（参考图样式）：5 类横排，上图下文 */
+.asset-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  align-content: center;
+  padding: 10px 0 6px;
+}
+.asset-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  min-width: 0;
+  padding: 6px 2px;
+  border-radius: 10px;
+  transition: background .15s ease;
+}
+.asset-cell:hover { background: var(--accent-tint); }
+.asset-cell-ico {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+}
+.asset-cell-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.asset-cell b {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+.asset-cell em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+
+/* 6. 工作台 / 快速入口（参考图样式）：5 入口单行横排，彩色图标 + 浅紫圆角底 */
+.quick-row {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  align-content: center;
+  padding: 10px 0 6px;
+}
+.quick-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  transition: background .15s ease;
+}
+.quick-cell:hover { background: var(--accent-tint); }
+.quick-cell-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EDE9FE; /* 薰衣草浅紫底（参考图样式，比 --accent-tint 明显） */
+  display: grid;
+  place-items: center;
+}
+.quick-cell-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.quick-cell-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   卡片背景改白色（用户确认 2026-08-21 21:21）：主内容卡片 + 侧边栏卡片
+   ═══════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--white);
+}
+.greet-card,
+.side-card {
+  background: var(--white);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   参考图布局：第一行卡片高（今日执行/当前项目/资源中心）、第二行矮（学习/最近沉淀/生活）
+   第三行更矮（工作台/AI/资产库）——三层高度递进；核心两列 31% 宽
+   ═══════════════════════════════════════════════════════════════ */
+/* 第一行：加高（min-height 撑起，内容 space-evenly 铺开更饱满）；核心两列 31% 宽 */
+[data-od-id="row-today"] {
+  grid-template-columns: 31% 31% 1fr;
+}
+[data-od-id="row-today"] .card {
+  min-height: 240px;
+}
+/* 第二行：压矮（紧凑内边距与行距）；核心两列 26% 宽 */
+[data-od-id="row-growth"] {
+  grid-template-columns: 31% 31% 1fr;
+}
+[data-od-id="row-growth"] .card {
+  padding: 9px;
+}
+[data-od-id="row-growth"] .proj-list {
+  gap: 4px;
+}
+[data-od-id="row-growth"] .proj-list li {
+  padding: 2px;
+}
+[data-od-id="card-notes"] .note-item {
+  padding: 6px 4px;
+}
+/* 笔记 hover 背景：淡微透明（覆盖原型实色淡紫） */
+.note-item:hover {
+  background: rgba(139, 92, 246, 0.07);
+}
+[data-od-id="card-life"] .life-list {
+  gap: 0;
+  padding: 2px 0;
+}
+[data-od-id="card-life"] .life-item {
+  padding: 13px 2px; /* 与今日执行一致 */
+}
+[data-od-id="row-tools"] {
+  grid-template-columns: 31% 31% 1fr;
+}
+[data-od-id="row-tools"] .card {
+  padding: 8px 10px;
+}
+[data-od-id="row-tools"] .quick-row,
+[data-od-id="row-tools"] .asset-grid {
+  flex: none;
+  padding: 1px 0;
+  gap: 4px;
+}
+[data-od-id="row-tools"] .quick-cell {
+  gap: 2px;
+  padding: 2px;
+}
+[data-od-id="row-tools"] .quick-cell-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+[data-od-id="row-tools"] .quick-cell-ico svg {
+  width: 13px;
+  height: 13px;
+}
+[data-od-id="row-tools"] .quick-cell-label {
+  font-size: 12px;
+}
+[data-od-id="row-tools"] .asset-cell {
+  gap: 2px;
+  padding: 2px;
+}
+[data-od-id="row-tools"] .asset-cell-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+[data-od-id="row-tools"] .asset-cell-ico svg {
+  width: 13px;
+  height: 13px;
+}
+[data-od-id="row-tools"] .asset-cell b {
+  font-size: 12px;
+}
+[data-od-id="row-tools"] .asset-cell em {
+  font-size: 10px;
+}
+[data-od-id="row-tools"] .ai-head p {
+  font-size: 11px;
+  margin-top: 1px;
+}
+[data-od-id="row-tools"] .ai-tags {
+  gap: 3px;
+  margin: 2px 0;
+}
+[data-od-id="row-tools"] .ai-tag {
+  font-size: 11px;
+  padding: 1px 6px;
+}
+[data-od-id="row-tools"] .ai-card .btn-block {
+  height: 24px;
+  font-size: 12px;
+}
+
+/* 主条目颜色：.proj-name-text 是 span 会被原型 .proj-line span 紫色规则命中，需同级覆盖为深色 */
+.proj-line .proj-name-text {
+  color: var(--fg);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Hero 焦点卡（用户确认 2026-08-22 17:35）：左右分栏结构
+   左栏概览：星星+今日最重要 → 旗帜+标题+AI标签+描述 → 三个胶囊元数据
+   右栏执行：主任务 / 状态 / 下一步 内容块 + 底部按钮组
+   ═══════════════════════════════════════════════════════════════ */
+[data-od-id="hero"] .focus-card {
+  flex: 0 0 65%; /* 占据 hero 宽度 65%（用户确认 2026-08-22 17:47 再缩 10%） */
+  align-self: stretch;
+  width: auto;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: row; /* 左右分栏 */
+  align-items: stretch;
+}
+/* 左栏：概览（60%） */
+.focus-left {
+  flex: 6;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+.focus-top {
+  display: flex;
+  align-items: center;
+}
+/* 右栏：执行详情（40%） */
+.focus-right {
+  flex: 4;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 16px;
+  justify-content: space-between;
+}
+/* 主体：旗帜图标 + 标题行 + 描述 */
+.focus-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.focus-flag {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #FCE7F3;
+  border: 1px solid #F9A8D4;
+  color: #EF4444;
+  display: grid;
+  place-items: center;
+}
+.focus-flag svg { width: 20px; height: 20px; }
+.focus-main-text { min-width: 0; flex: 1; }
+.focus-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.focus-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.focus-ai-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.focus-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* 元数据：三个浅灰胶囊 */
+.focus-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.focus-meta-pill {
+  font-size: 11px;
+  color: var(--muted);
+  background: #F3F4F6;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+/* 右栏内容块 */
+.focus-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.focus-block-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.focus-block-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-deep);
+  letter-spacing: 0.06em;
+}
+.focus-block-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.focus-next-text {
+  color: var(--accent-deep);
+}
+.focus-state-pill {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+}
+/* 按钮组（贴底） */
+.focus-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.focus-btns .btn {
+  flex: 1;
+  height: 34px;
+  font-size: 12.5px;
+  padding: 0 10px;
+}
+
+/* ── Hero 焦点卡空状态（用户确认 2026-08-22 17:52）：左右分栏，左侧图标+文案，右侧胶囊按钮 ── */
+.focus-card-empty {
+  align-items: center;
+}
+.empty-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.empty-ico {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  color: var(--accent-deep);
+  display: grid;
+  place-items: center;
+}
+.empty-ico svg { width: 22px; height: 22px; }
+.empty-text { min-width: 0; }
+.empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.3;
+}
+.empty-title-kai {
+  font-family: "KaiTi", "楷体", "STKaiti", "KaiTi_GB2312", serif;
+  color: var(--accent-deep);
+}
+.empty-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.empty-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.empty-btn {
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  color: var(--accent-deep);
+  border-radius: 999px;
+  height: 32px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all .15s ease;
+}
+.empty-btn:hover {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: var(--white);
+}
+

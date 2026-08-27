@@ -31,9 +31,17 @@
 | **数据的增删改查**（任务/笔记/项目/资产…） | `POST /api/data` + action | `createTask`、`updateNote` |
 | **独立能力**（不单纯是 CRUD） | 独立路由 `app/api/<name>/route.ts` | `/api/backup`、`/api/stats`、`/api/space`、`/api/search`、`/api/chat` |
 
-- 在 `/api/data` 加 action：先在 `lib/db-actions.ts` 写实现，再到 `app/api/data/route.ts` 的 `ACTIONS` 表加一行映射
-- 独立路由只做"薄封装"：参数解析 → 调 `lib/db-actions.ts` → 返回 JSON，业务逻辑不要写在 route 里
+- 在 `/api/data` 加 action：先在 `lib/db-actions/` 写实现，再到 `app/api/data/route.ts` 的 `ACTIONS` 表加一行映射
+- 独立路由只做"薄封装"：参数解析 → 调 `lib/db-actions/` → 返回 JSON，业务逻辑不要写在 route 里
 - **例外**：极简单查询（一行 prisma 且无复用价值）允许直接写在 route，但要注释说明
+
+## API 统一约定（2026-08-27 起强制执行）
+
+- **响应格式统一**：所有接口（`/api/data` + 独立路由）成功返回 `{ ok: true, ... }`，失败返回 `{ ok: false, error: string }` + 适当 status code（400/404/500/502）。`/api/data` 的成功载荷统一放 `data` 字段
+- **入参校验**：`/api/data` 的每个带参 action 必须在 `SCHEMAS` 表登记白名单（`lib/api-validation.ts` 提供 `vStr/vOptStr/vBool/vInt/vObj/vArr...` 校验器），校验失败返回 400；独立路由也要做基本参数类型检查
+- **客户端只走封装**：前端一律 `lib/api.ts` 的 `call()`（自动解包 `{ok,data}` 并抛错）；服务端调度器用 `instrumentation.ts` 的 `callData()`（同格式）。不要裸写 `fetch`
+- **新增带参 action 的步骤**：① `lib/db-actions/` 写实现 ② `SCHEMAS` 加校验 ③ `ACTIONS` 加映射 ④ `lib/api.ts` 加封装函数
+- 流式/文件类接口（`/api/chat`、`/api/export*`）不受 `data` 包裹约束，但必须带 `ok` 字段
 
 ## db-actions.ts 拆分规则
 
@@ -53,8 +61,7 @@
 
 - 危险操作（删除/清空）必须有确认弹窗
 - 删除类 action 注意级联：如删项目时先删任务（SetNull 会污染个人待办）
-- 所有 API 返回 `{ ok: boolean }` 结构；错误统一 `{ error: string }` + 适当 status code
-- API 入口做基本参数校验，`payload` 不要直接信任（本机项目可宽松，但别裸奔）
+- 错误信息不要泄露内部细节到前端（日志打全量，响应给简短信息）
 
 ## Git 提交规范（已有，保持）
 

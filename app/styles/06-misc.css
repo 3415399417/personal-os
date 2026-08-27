@@ -1,0 +1,59 @@
+/* 全局 toast（自动推送提示） */
+.global-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 200;
+  background: var(--accent-deep);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  animation: toast-in .25s ease;
+  max-width: 320px;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* 收集箱处理流 */
+.inbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.inbox-suggest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inbox-suggest-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+/* 计划 vs 实际 */
+.plan-vs-actual {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.plan-vs-actual b {
+  color: #111;
+  font-weight: 700;
+}
+.plan-vs-actual b.good { color: #16A34A; }
+.plan-vs-actual b.low { color: #D97706; }

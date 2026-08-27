@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./prototype.css";
-import "./pages.css";
+import "./styles/01-base.css";
+import "./styles/02-home.css";
+import "./styles/03-github.css";
+import "./styles/04-search.css";
+import "./styles/05-review.css";
+import "./styles/06-misc.css";
+import "./styles/07-stats.css";
+import "./styles/08-dark-art.css";
+import "./styles/09-review-detail.css";
+import "./styles/10-projects.css";
+import "./styles/11-resources.css";
+import "./styles/12-dark-theme.css";
 
 export const metadata: Metadata = {
   title: "BetterLife AI · 个人效率 Dashboard",

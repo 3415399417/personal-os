@@ -1,0 +1,185 @@
+/* ── GitHub 情报页（用户确认 2026-08-22 19:36） ── */
+.github-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+}
+.github-tab {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+.github-tab:hover { color: var(--fg); }
+.github-tab.active {
+  background: var(--white);
+  color: var(--accent-deep);
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.github-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+.github-card {
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.github-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+.github-name {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.github-desc {
+  font-size: 11px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.github-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.github-lang i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.github-loading,
+.github-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--muted);
+  font-size: 13px;
+  flex-direction: column;
+  text-align: center;
+}
+.news-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.news-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px dashed var(--border);
+  cursor: pointer;
+  transition: background .15s ease;
+  min-width: 0;
+}
+.news-item:last-child { border-bottom: none; }
+.news-item:hover { background: rgba(139, 92, 246, 0.06); }
+.news-score {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  color: var(--accent-deep);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.news-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.news-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.news-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+.news-arrow {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--accent-light);
+  transition: color .15s ease;
+}
+.news-item:hover .news-arrow { color: var(--accent-deep); }
+/* 仓库分类子按钮（插件/模型/Agent） */
+.github-subtabs {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.github-subtab {
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+.github-subtab:hover { color: var(--fg); border-color: var(--accent-light); }
+.github-subtab.active {
+  background: var(--accent-tint);
+  border-color: var(--accent-light);
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+/* Harness 分类：官方通知 + 社区插件 */
+.github-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.github-bell {
+  font-size: 14px;
+}
+.notice-tag {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+

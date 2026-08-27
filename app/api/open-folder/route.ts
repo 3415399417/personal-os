@@ -11,14 +11,14 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "请求体不是合法 JSON" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "请求体不是合法 JSON" }, { status: 400 });
   }
   const p = (body.path ?? "").trim();
   if (!p) {
-    return NextResponse.json({ error: "缺少文件夹路径" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "缺少文件夹路径" }, { status: 400 });
   }
   if (!existsSync(p)) {
-    return NextResponse.json({ error: `文件夹不存在：${p}` }, { status: 404 });
+    return NextResponse.json({ ok: false, error: `文件夹不存在：${p}` }, { status: 404 });
   }
   // execFile 不经 shell，避免路径注入；explorer 直接打开目录
   await new Promise<void>((resolve) => {

@@ -682,14 +682,14 @@ function userConfirmedDeletion(messages: any[]): boolean {
 
 export async function POST(req: Request) {
   if (!API_KEY) {
-    return NextResponse.json({ error: "服务端未配置 DSH_DEEPSEEK_KEY" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "服务端未配置 DSH_DEEPSEEK_KEY" }, { status: 500 });
   }
 
   let body: { messages?: any[]; model?: string; effort?: string; pathname?: string };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "请求体不是合法 JSON" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "请求体不是合法 JSON" }, { status: 400 });
   }
 
   const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -698,7 +698,7 @@ export async function POST(req: Request) {
   const pathname = typeof body.pathname === "string" ? body.pathname : "";
 
   if (messages.length === 0) {
-    return NextResponse.json({ error: "消息不能为空" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "消息不能为空" }, { status: 400 });
   }
 
   const pageCtx = await buildPageContext(pathname);
@@ -742,13 +742,13 @@ export async function POST(req: Request) {
       if (!upstream.ok) {
         const detail = await upstream.text();
         console.error(`[api/chat] upstream ${upstream.status}: ${detail.slice(0, 300)}`);
-        return NextResponse.json({ error: `上游 API 错误 ${upstream.status}` }, { status: 502 });
+        return NextResponse.json({ ok: false, error: `上游 API 错误 ${upstream.status}` }, { status: 502 });
       }
 
       const data = await upstream.json();
       const msg = data?.choices?.[0]?.message;
       if (!msg) {
-        return NextResponse.json({ error: "上游返回格式异常" }, { status: 502 });
+        return NextResponse.json({ ok: false, error: "上游返回格式异常" }, { status: 502 });
       }
       finalModel = data.model;
       finalUsage = data.usage ?? null;
@@ -835,6 +835,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
+      ok: true,
       content: finalContent,
       reasoning: finalReasoning,
       model: finalModel,
@@ -843,6 +844,6 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[api/chat] failed:", err);
-    return NextResponse.json({ error: "调用 AI 服务失败" }, { status: 502 });
+    return NextResponse.json({ ok: false, error: "调用 AI 服务失败" }, { status: 502 });
   }
 }

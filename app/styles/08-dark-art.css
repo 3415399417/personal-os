@@ -1,0 +1,29 @@
+/* 暗色模式：hero 场景插画配色适配（CSS 覆盖 SVG presentation attributes） */
+[data-theme="dark"] .hero-scene svg rect[fill="#F5F3FF"] { fill: #1E1E26; }
+[data-theme="dark"] .hero-scene svg rect[fill="#ffffff"] { fill: #262632; }
+[data-theme="dark"] .hero-scene svg rect[fill="#fff"] { fill: #262632; }
+[data-theme="dark"] .hero-scene svg path[fill="#EDE9FE"] { fill: #2E2E3A; }
+[data-theme="dark"] .hero-scene svg path[fill="#C4B5FD"] { fill: #4C3D7A; }
+[data-theme="dark"] .hero-scene svg path[fill="#A78BFA"] { fill: #7C5CE0; }
+[data-theme="dark"] .hero-scene svg ellipse[fill="#fff"] { fill: #262632; }
+[data-theme="dark"] .hero-scene svg circle[fill="#fff"] { fill: #262632; }
+[data-theme="dark"] .hero-scene svg path[fill="#1F2937"] { fill: #E5E7EB; }
+/* 暗色模式：白底装饰插画去底（multiply 让白色×背景=背景色，高光自然压暗） */
+[data-theme="dark"] .card > .card-art,
+[data-theme="dark"] .card > .exec-art,
+[data-theme="dark"] .card > .study-art,
+[data-theme="dark"] .card > .resources-art,
+[data-theme="dark"] .card > .notes-art,
+[data-theme="dark"] .card > .projects-art,
+[data-theme="dark"] .card > .life-art {
+  mix-blend-mode: multiply;
+  filter: brightness(.9) saturate(.9);
+  opacity: .8;
+}
+/* 暗色模式：个别过亮插画压暗 */
+[data-theme="dark"] .card > .resources-art {
+  opacity: .75;
+}
+[data-theme="dark"] .card > .projects-art {
+  filter: brightness(.8) saturate(.85);
+}

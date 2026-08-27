@@ -1,0 +1,1061 @@
+/* ═══════════════════════════════════════════════════════════════
+   pages.css — 功能页面扩展样式
+   铁律：只用 prototype.css 的 :root 变量与视觉语言（同色/同圆角/同字号/同阴影），
+   禁止引入新颜色、新字体、新圆角体系。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 页面骨架 ── */
+/* 首页 grid-row 不被 flex 压缩（原型 flex: 2.2 1 0 在矮视口下会把卡片压扁、内容溢出） */
+.grid-row {
+  flex: none;
+}
+.grid-row:last-child {
+  flex: none;
+}
+/* Hero 卡片同样防压缩（.page-scroll 内 flex 子项默认 shrink，内容会被裁） */
+.hero-card {
+  flex: none;
+}
+.page {
+  flex: 1; min-height: 0; width: 100%;
+  display: flex; flex-direction: column; gap: 10px;
+  overflow: hidden;
+}
+.page-scroll {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding-right: 2px;
+  /* 可滚动但隐藏滚动条（跨浏览器） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.page-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.page-scroll::-webkit-scrollbar-track { background: transparent; }
+.page-scroll::-webkit-scrollbar-thumb { background: transparent; }
+.page-head {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.page-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.page-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.page-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── 面板（复用 .card 视觉的容器） ── */
+.panel {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  flex: none; /* 内容自然撑高，不压缩（否则溢出被裁剪且无法滚动） */
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  padding: 14px; min-width: 0;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.panel-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+.panel-note { font-size: 10.5px; color: var(--muted); }
+
+/* ── 状态徽章（复用 .tag 视觉） ── */
+.badge {
+  flex: none; font-size: 10px; font-weight: 600;
+  color: var(--accent-deep); background: var(--accent-tint);
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  padding: 2px 8px; line-height: 1.5;
+}
+.badge.done { color: var(--muted); background: var(--white); }
+.badge.warn { color: #B45309; background: #FEF3C7; border-color: #FDE68A; }
+
+/* ── 筛选标签（复用 .ai-tag 视觉） ── */
+.filter-tabs { flex: none; display: flex; flex-wrap: wrap; gap: 4px; }
+.filter-tab {
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius-pill); padding: 4px 10px;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.filter-tab:hover { background: var(--accent-tint); border-color: var(--accent-light); color: var(--accent-deep); }
+.filter-tab.active { color: var(--accent-deep); background: var(--accent-tint); border-color: var(--accent-light); font-weight: 600; }
+
+/* ── 表单 ── */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 11px; font-weight: 600; color: var(--fg); }
+.field-hint { font-size: 10px; color: var(--muted); }
+.input, .textarea, .select {
+  width: 100%; font: inherit; font-size: 12.5px; color: var(--fg);
+  background: var(--white); border: 1px solid var(--accent-light);
+  border-radius: 10px; padding: 8px 11px; outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input::placeholder, .textarea::placeholder { color: var(--muted); }
+.input:focus, .textarea:focus, .select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+.textarea { resize: vertical; min-height: 96px; line-height: 1.55; }
+.select { appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238B5CF6' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; padding-right: 30px; }
+
+/* ── 弹窗 ── */
+.modal-mask {
+  position: fixed; inset: 0; z-index: 60;
+  background: color-mix(in oklch, var(--accent-deep) 18%, transparent);
+  display: grid; place-items: center; padding: 20px;
+  animation: modal-in .15s ease;
+}
+/* 查看弹窗置顶（高于文件夹/其他弹窗） */
+.note-modal-top { z-index: 70; }
+@keyframes modal-in { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%; max-width: 420px; max-height: calc(100vh - 60px); overflow-y: auto;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-pop);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: modal-pop .18s cubic-bezier(.22,.61,.36,1);
+}
+@keyframes modal-pop { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.modal-close {
+  width: 26px; height: 26px; border-radius: 8px; flex: none;
+  display: grid; place-items: center; color: var(--muted);
+  transition: background .15s ease, color .15s ease;
+}
+.modal-close:hover { background: var(--surface); color: var(--fg); }
+.modal-close svg { width: 14px; height: 14px; }
+.modal-body { display: flex; flex-direction: column; gap: 10px; }
+.modal-foot { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ── 今日任务分组 ── */
+.task-groups { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.task-group {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  padding: 12px; min-width: 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.task-group-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.task-group-title { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.task-group-title svg { width: 13px; height: 13px; color: var(--accent); flex: none; }
+.task-group-count { font-size: 10.5px; color: var(--muted); }
+.task-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.task-list::-webkit-scrollbar { width: 0; }
+.task-item {
+  display: flex; align-items: flex-start; gap: 9px; width: 100%;
+  padding: 6px 8px; border-radius: 8px; text-align: left;
+  transition: background .15s ease;
+}
+.task-item:hover { background: var(--accent-tint); }
+.task-check {
+  flex: none; width: 16px; height: 16px; border-radius: 5px; margin-top: 1px;
+  border: 1.5px solid var(--accent-light); background: var(--white);
+  display: grid; place-items: center; color: transparent;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.task-check svg { width: 10px; height: 10px; }
+.task-item.done .task-check { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.task-body { flex: 1; min-width: 0; }
+.task-text { font-size: 12px; color: var(--fg); line-height: 1.45; }
+.task-item.done .task-text { color: var(--muted); text-decoration: line-through; }
+.task-meta { display: flex; gap: 8px; margin-top: 2px; font-size: 10px; color: var(--muted); }
+.task-meta .tag { font-size: 9px; padding: 0 6px; }
+.task-empty { font-size: 11px; color: var(--muted); padding: 8px; text-align: center; }
+
+/* ── 任务删除按钮（hover 浮现） ── */
+.task-del {
+  flex: none; width: 22px; height: 22px; border-radius: 7px;
+  display: grid; place-items: center;
+  color: var(--muted); opacity: 0;
+  transition: opacity .15s ease, background .15s ease, color .15s ease;
+}
+li:hover > .task-del { opacity: 1; }
+/* 修复：task-del 是 li 的后代（li > div.task-li-row > button），直接子选择器永不命中 → 用后代选择器 */
+li:hover .task-del, .task-li:hover .task-del {
+  opacity: 1;
+  color: var(--fg); /* 悬停行时变深色，确保看得见 */
+}
+/* 学习计划等 div.list-item 列表项同样 hover 浮现 */
+.list-item:hover > .task-del {
+  opacity: 1;
+  color: var(--fg);
+}
+.list-item:hover > .task-del:hover { background: #FEE2E2; color: #DC2626; }
+.task-del:hover { background: #FEE2E2; color: #DC2626; }
+.task-del svg { width: 13px; height: 13px; }
+.task-del:focus-visible { opacity: 1; color: var(--fg); }
+
+/* 资产卡片等非 li 容器里的删除按钮：卡片 hover 时浮现（避免一直透明不可见） */
+.mini-card .task-del { opacity: 0.45; }
+.mini-card:hover .task-del { opacity: 1; color: var(--fg); }
+.mini-card .task-del:hover { opacity: 1; }
+
+/* ── 列表行（通用） ── */
+.list-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-btn); }
+.list-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 12px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s ease;
+}
+.list-item:last-child { border-bottom: 0; }
+.list-item:hover { background: var(--accent-tint); }
+.list-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.list-item-title { font-size: 12.5px; font-weight: 600; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item-sub { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item-time { flex: none; font-size: 10px; color: var(--muted); }
+
+/* ── 网格卡片（项目/资产/笔记） ── */
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mini-card {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  padding: 14px; min-width: 0;
+  text-align: left;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.mini-card:hover { transform: translateY(-2px); border-color: var(--accent-light); }
+.mini-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.mini-card-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.35; }
+.mini-card-desc { font-size: 11px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mini-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.mini-card-meta { font-size: 10px; color: var(--muted); }
+.mini-ico {
+  flex: none; width: 34px; height: 34px; border-radius: 10px;
+  background: var(--white); border: 1px solid var(--border); color: var(--accent);
+  display: grid; place-items: center;
+}
+.mini-ico svg { width: 17px; height: 17px; }
+
+/* ── 进度（复用 .progress 视觉） ── */
+.progress-label { display: flex; align-items: baseline; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-bottom: 4px; }
+.progress-label b { color: var(--accent-deep); font-size: 11px; }
+
+/* ── AI 对话 ── */
+.chat-wrap {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.chat-list { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chat-list::-webkit-scrollbar { width: 0; }
+.chat-row { display: flex; gap: 8px; max-width: 86%; }
+.chat-row.assistant { align-self: flex-start; }
+.chat-row.user { align-self: flex-end; flex-direction: row-reverse; }
+.chat-avatar {
+  flex: none; width: 28px; height: 28px; border-radius: 9px;
+  background: var(--accent); color: var(--white);
+  display: grid; place-items: center;
+}
+.chat-avatar svg { width: 15px; height: 15px; }
+.chat-row.user .chat-avatar { background: var(--accent-deep); }
+.chat-bubble {
+  padding: 9px 12px; font-size: 12px; line-height: 1.6; color: var(--fg);
+  border-radius: var(--radius-btn);
+}
+.chat-row.assistant .chat-bubble { background: var(--white); border: 1px solid var(--border); border-top-left-radius: 4px; }
+.chat-row.user .chat-bubble { background: var(--accent-deep); color: var(--white); border-top-right-radius: 4px; }
+.chat-time { font-size: 9.5px; color: var(--muted); margin-top: 3px; }
+.chat-row.user .chat-time { text-align: right; }
+.chat-quick { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+.chat-input-row {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-top: 1px solid var(--border); background: var(--bg);
+}
+.chat-input-row .input { flex: 1; border-radius: var(--radius-pill); }
+
+/* ── 统计条（学习中心等） ── */
+.stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat-strip .stat-cell { padding: 10px 12px; border-radius: var(--radius-btn); }
+.stat-strip .stat-cell b { font-size: 20px; }
+.stat-strip .stat-cell span { font-size: 10.5px; }
+
+/* ── 快捷入口（工作台，复用 .quick-grid 视觉） ── */
+.quick-page { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.quick-page .quick-item { padding: 14px 6px 12px; }
+
+/* ── 设置 ── */
+.settings-list { display: flex; flex-direction: column; }
+.setting-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: 0; }
+.setting-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.setting-name { font-size: 12.5px; font-weight: 600; }
+.setting-desc { font-size: 10.5px; color: var(--muted); }
+.switch {
+  flex: none; width: 36px; height: 20px; border-radius: var(--radius-pill);
+  background: var(--surface-deep); position: relative;
+  transition: background .15s ease;
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--white);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--accent) 20%, transparent);
+  transition: transform .15s ease;
+}
+.switch.on { background: var(--accent); }
+.switch.on::after { transform: translateX(16px); }
+
+/* ── 空状态 ── */
+.empty {
+  padding: 24px; text-align: center; font-size: 11.5px; color: var(--muted);
+}
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 26px 16px; text-align: center;
+}
+.empty-state-ico {
+  width: 46px; height: 46px; border-radius: 14px;
+  background: var(--accent-tint); border: 1px solid var(--border);
+  color: var(--accent); display: grid; place-items: center;
+  margin-bottom: 2px;
+}
+.empty-state-ico svg { width: 22px; height: 22px; }
+.empty-state-title { font-size: 13px; font-weight: 700; color: var(--fg); }
+.empty-state-sub { font-size: 11px; color: var(--muted); line-height: 1.5; max-width: 240px; }
+.empty-state .btn { margin-top: 4px; }
+
+/* ── 删除项目按钮（详情页，危险操作） ── */
+.btn-danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+.btn-danger:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+}
+
+/* ── 今日焦点星标按钮（hover 浮现，实心=焦点） ── */
+.task-focus {
+  flex: none; width: 22px; height: 22px; border-radius: 7px;
+  display: grid; place-items: center;
+  color: var(--muted); opacity: 0;
+  transition: opacity .15s ease, background .15s ease, color .15s ease;
+}
+li:hover > .task-focus { opacity: 1; }
+.task-focus:hover { background: var(--accent-tint); color: var(--accent-deep); }
+.task-focus svg { width: 12px; height: 12px; }
+.task-focus:focus-visible { opacity: 1; }
+/* 焦点状态：常显实心紫星 */
+.task-focus.on {
+  opacity: 1;
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+}
+.task-focus.on:hover { background: var(--surface-deep); }
+/* 焦点任务文字高亮 */
+.task-item.focus .task-text { color: var(--accent-deep); font-weight: 700; }
+
+/* ── 系统提醒：新建表单 + 左任务右时间 ── */
+.remind-form {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.remind-form .input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.remind-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.remind-day-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+.remind-day-tab {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 0;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  transition: all .15s ease;
+}
+.remind-day-tab.active {
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border-color: var(--accent-light);
+}
+.remind-time-input {
+  width: 86px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.remind-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.remind-actions .btn {
+  height: 28px;
+  font-size: 11.5px;
+  padding: 0 10px;
+}
+/* 左任务右时间 */
+.side-reminders .remind-item {
+  align-items: center;
+}
+.side-reminders .remind-main {
+  flex: 1;
+  min-width: 0;
+}
+.side-reminders .remind-main b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 已提醒置灰 */
+.remind-item.done .remind-main b {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.remind-item.done .remind-time {
+  background: var(--surface-deep);
+  color: var(--muted);
+}
+
+/* ── 当前项目列表：条目从顶部向下排列（原型 space-evenly 在条目少时居中） ── */
+.proj-list { justify-content: flex-start; }
+/* 项目行小图标（文件夹，紫底） */
+.proj-line .proj-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--fg); /* 项目名黑色（原型 .proj-line span 会染成紫色） */
+}
+/* 项目名 + 任务数副行 */
+.proj-line .proj-name-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.25;
+}
+.proj-line .proj-name-text b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-line .proj-name-text em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted);
+}
+/* 当前项目列表：不滚动（卡片自适应高度）+ 行距 */
+[data-od-id="card-projects"] .proj-list {
+  overflow: visible;
+  gap: 8px;
+}
+[data-od-id="card-projects"] .proj-list li {
+  padding: 4px 2px;
+}
+.proj-line .proj-name b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+}
+.proj-ico svg { width: 14px; height: 14px; }
+/* 项目行字号放大（原型 11.5/10.5 偏小） */
+.proj-line { font-size: 13px; }
+.proj-line span { font-size: 13px; }
+.proj-line span.num { font-size: 12px; }
+
+/* ── 最近沉淀：删除按钮常显（不 hover 隐藏，hover 变红） ── */
+[data-od-id="card-notes"] .note-del {
+  opacity: 1;
+  width: 20px;
+  height: 20px;
+}
+
+/* ── 笔记查看弹窗美化 ── */
+.note-view-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.note-view-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+}
+.note-view-ico svg { width: 15px; height: 15px; }
+.note-view-time {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.note-view-body {
+  background: var(--white);
+  border: 1px solid var(--accent-light);
+  border-radius: 12px;
+  padding: 18px 20px;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+/* 幽灵按钮（白底紫边） */
+.btn-ghost {
+  background: var(--white);
+  color: var(--accent-deep);
+  border-color: var(--accent-light);
+}
+.btn-ghost:hover {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+
+/* ── 折叠/展开按钮（任务列表、项目笔记超 8 条时） ── */
+.collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px auto 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-light);
+  background: var(--white);
+  transition: background .15s ease;
+}
+.collapse-toggle:hover { background: var(--accent-tint); }
+.collapse-toggle svg { width: 11px; height: 11px; }
+
+/* ── 项目详情页笔记列表：行距优化（原型 padding 1px 太拥挤） ── */
+.panel .note-list {
+  justify-content: flex-start;
+  gap: 4px;
+}
+.panel .note-item {
+  padding: 9px 10px;
+}
+.panel .note-item .note-ico {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+.panel .note-item .note-ico svg { width: 12px; height: 12px; }
+.panel .note-item b { font-size: 12.5px; }
+.panel .note-item em { font-size: 10.5px; }
+
+/* ── 项目位置（文件夹路径行） ── */
+.proj-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.proj-path-label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.proj-path-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  background: var(--accent-tint);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.proj-path-empty {
+  flex: 1;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.proj-path-btn {
+  height: 26px;
+  font-size: 11.5px;
+  padding: 0 10px;
+  flex: none;
+}
+.proj-path-edit {
+  margin-top: 10px;
+}
+.proj-path-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #DC2626;
+}
+.proj-path-edit .input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+/* ── 最近沉淀：条目从顶部向下排列（原型 space-evenly 在条目少时居中）；不滚动 ── */
+[data-od-id="card-notes"] .note-list {
+  justify-content: flex-start;
+  gap: 8px;
+  overflow: visible;
+}
+/* 行距优化：上下间距舒适（12px + 8px 行间） */
+[data-od-id="card-notes"] .note-item {
+  padding: 12px 8px;
+}
+
+/* ── 项目笔记文件夹卡片（笔记页） ── */
+.proj-folder-card .folder-ico {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: var(--white);
+}
+.folder-note-list .note-item {
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.folder-note-list .note-item:hover {
+  background: var(--accent-tint);
+}
+
+/* ── 今日焦点项目区（/today） ── */
+.focus-project-panel { flex: none; }
+.focus-project-body {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+.focus-project-left {
+  flex: 1;
+  min-width: 0;
+}
+.focus-project-name {
+  font-size: 14px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.focus-project-right {
+  flex: none;
+  width: 220px;
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.focus-project-right em {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.focus-project-next {
+  font-size: 12px;
+  color: var(--accent-deep);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── 项目详情页「设为今日焦点」按钮 ── */
+.proj-focus-btn {
+  height: 26px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 0 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--accent-light);
+  background: var(--white);
+  color: var(--accent-deep);
+  transition: all .15s ease;
+}
+.proj-focus-btn:hover { background: var(--accent-tint); }
+.proj-focus-btn.on {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: var(--white);
+}
+.proj-focus-btn svg { width: 12px; height: 12px; }
+
+/* ── 项目焦点卡（参考图风格：图标锚点 + 文本进度 + 橙点状态） ── */
+.focus-project-card .focus-left-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.focus-ico {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-light);
+  color: var(--accent-deep);
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+}
+.focus-ico svg { width: 20px; height: 20px; }
+.focus-left-text { min-width: 0; }
+/* 右栏：列表居中、按钮贴底（与左栏元数据基线对齐） */
+.focus-project-card .focus-right {
+  justify-content: space-between;
+}
+.focus-project-card .focus-list {
+  justify-content: center;
+}
+/* 焦点卡右侧详情：标签与值层级区分（参考图风格） */
+.focus-list span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.focus-list b {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+/* 下一步：紫色强调（行动指引） */
+.focus-list li:last-child b {
+  color: var(--accent-deep);
+}
+/* 状态：橙点 + 文字（参考图风格，去紫底 pill） */
+.focus-list .state {
+  flex: none;
+  color: var(--fg);
+  font-size: 10.5px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  padding: 0 0 0 18px;
+  position: relative;
+}
+.focus-list .state::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #F59E0B;
+}
+
+/* ── 今日执行（战报卡） ── */
+.exec-progress {
+  margin-top: 8px;
+}
+.exec-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 0;
+}
+/* ── 今日执行（手绘线框版）：标题下横线 + 左列分类 + 右列状态（大括号归组）+ 底部查看全部 ── */
+.exec-divider {
+  border-top: 1px solid var(--border);
+  margin: 2px 0 10px;
+}
+.exec-body {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 2px 0 4px;
+}
+/* 左列：分类标签（必须完成 / 进行中 / 等待处理），垂直均匀铺开 */
+.exec-cats {
+  flex: 1;
+  min-width: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* 顶部排列，下方留白给插画 */
+}
+.exec-cats li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 2px;
+  font-size: 12.5px;
+  color: var(--fg);
+  border-bottom: 1px dashed var(--border);
+  line-height: 1.3;
+}
+/* 最近沉淀笔记行像素图标 */
+.notes-note-ico {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: none;
+}
+/* 学习卡片分类行像素图标 */
+.study-cat-ico {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: none;
+}
+/* 当前项目子项目行像素文件夹图标 */
+.proj-sub-ico {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: none;
+}
+/* 今日执行分类行图标（像素图标） */
+.exec-cat-ico {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: none;
+}
+.card > .exec-art {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.exec-cats li:last-child { border-bottom: none; }
+/* 右列：状态统计文字（数字在前带“项”，无大括号无圆圈） */
+.exec-status-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* 顶部排列，与左列对齐 */
+  min-width: 100px;
+}
+.exec-status-list li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 13px 2px;
+  font-size: 12.5px;
+  color: #111;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.exec-status-list b {
+  font-size: 13px;
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+/* 底部：横线 + 查看全部链接（三个卡片通用） */
+.card-foot {
+  border-top: 1px solid var(--border);
+  margin-top: auto; /* 贴底对齐：内容不足时也钉在卡片底部（与内容区 flex:1 撑满等效，不影响其他卡片） */
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+}
+.card-foot .link-more { font-size: 11.5px; }
+/* 去掉超链接 hover 下划线（与卡片整体风格一致） */
+.link-more:hover { text-decoration: none; }
+
+/* ── 学习与成长（当前项目同款行式）：列表顶部排列 + 右侧 meta 文字 ── */
+[data-od-id="card-study"] .proj-list {
+  justify-content: flex-start;
+  gap: 8px;
+}
+[data-od-id="card-study"] .proj-list li {
+  padding: 4px 2px;
+}
+.study-meta {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  white-space: nowrap;
+}
+.study-meta .num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-deep);
+}
+/* 学习卡片副行说明（本周累计/沉淀细节） */
+.study-sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  padding-left: 26px;
+}
+
+/* 学习中心：近 7 天学习时长趋势图 */
+.usage-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 120px;
+  padding: 12px 4px 0;
+}
+.usage-bar-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.usage-bar {
+  width: 100%;
+  max-width: 34px;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--accent-light), var(--accent));
+  opacity: 0.75;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: auto;
+  transition: opacity .15s ease;
+}
+.usage-bar-col:hover .usage-bar { opacity: 1; }
+.usage-bar-col.today .usage-bar {
+  background: linear-gradient(180deg, #C084FC, #7C3AED);
+  opacity: 1;
+}
+.usage-bar-val {
+  font-size: 9.5px;
+  color: var(--accent-deep);
+  font-weight: 700;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.usage-bar-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+.usage-bar-col.today .usage-bar-label { color: var(--accent-deep); font-weight: 700; }
+[data-od-id="card-exec"] .exec-item {
+  padding: 3px 0;
+}
+.exec-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 8px;
+  transition: background .15s ease;
+}
+.exec-link:hover { background: var(--accent-tint); }
+.exec-link div {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.exec-link b {
+  display: block;
+  font-size: 12px;
+  color: var(--fg);
+  font-weight: 600;
+}
+.exec-link em {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.exec-link .exec-count {
+  flex: none;
+}
+[data-od-id="card-exec"] .exec-ico {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+[data-od-id="card-exec"] .exec-ico svg { width: 12px; height: 12px; }
+
+/* ── 响应式 ── */
+@media (max-width: 1180px) {
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 960px) {
+  .page { overflow: visible; }
+  .page-scroll { overflow: visible; }
+  .task-groups { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  .quick-page { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .card-grid { grid-template-columns: 1fr; }
+}
+

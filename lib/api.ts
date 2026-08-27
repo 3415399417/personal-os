@@ -24,17 +24,16 @@ async function call<T>(action: string, payload?: unknown): Promise<T> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action, payload }),
   });
-  if (!resp.ok) {
-    let msg = `HTTP ${resp.status}`;
-    try {
-      const d = await resp.json();
-      if (d?.error) msg = d.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
+  let d: { ok?: boolean; data?: T; error?: string } | null = null;
+  try {
+    d = await resp.json();
+  } catch {
+    /* ignore */
   }
-  return (await resp.json()) as T;
+  if (!resp.ok || !d?.ok) {
+    throw new Error(d?.error || `操作失败 (HTTP ${resp.status})`);
+  }
+  return d.data as T;
 }
 
 /* ── 首页 Dashboard ── */
@@ -80,10 +79,6 @@ export function getNotificationsForBell(): Promise<{ unreadCount: number; items:
 
 export function createNotification(input: { type: string; title: string; body?: string }): Promise<void> {
   return call("createNotification", input);
-}
-
-export function markAllNotificationsRead(): Promise<void> {
-  return call("markAllNotificationsRead");
 }
 
 export function deleteNotification(id: string): Promise<void> {

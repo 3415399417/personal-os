@@ -57,10 +57,6 @@ export async function createNotification(input: { type: string; title: string; b
   });
 }
 
-export async function markAllNotificationsRead(): Promise<void> {
-  await prisma.notification.updateMany({ where: { read: false }, data: { read: true } });
-}
-
 export async function deleteNotification(id: string): Promise<void> {
   await prisma.notification.delete({ where: { id } });
 }

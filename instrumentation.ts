@@ -3,25 +3,15 @@
 // 设计：纯 Node 代码（不 import 任何业务模块），所有操作走 HTTP API，
 //      避免 webpack 打包原生模块问题。
 // 任务：
-//  1. 每日 21:00 自动生成日报（存为复盘）
-//  2. 每周日 21:00 自动生成周报
+//  1. 每日 20:00 自动生成日报（存为复盘；幂等去重，每天最多一条）
+//  2. 每周日 20:00 自动生成周报
 //  3. 每分钟检查到期提醒 → 创建通知
+// 去重说明：生成与落库都在 /api/auto-report（Review.autoKey 唯一键兜底），
+//           本调度器只管"到点调用"，重复触发也不会产生第二条。
 
 const BASE = "http://127.0.0.1:3000";
 
-function todayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function weekKey(): string {
-  const d = new Date();
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
-}
-
-/** 调用 /api/data action（服务端 HTTP 版，与前端 lib/api.ts 同源） */
+/** 调用 /api/data action（服务端 HTTP 版，与前端 lib/api.ts 同源；统一 {ok,data} 格式） */
 async function callData(action: string, payload?: unknown): Promise<any> {
   const res = await fetch(`${BASE}/api/data`, {
     method: "POST",
@@ -29,38 +19,24 @@ async function callData(action: string, payload?: unknown): Promise<any> {
     body: JSON.stringify({ action, payload }),
     signal: AbortSignal.timeout(30000),
   });
-  return res.json();
+  const d = await res.json().catch(() => null);
+  if (!d?.ok) throw new Error(d?.error ?? `callData ${action} 失败`);
+  return d.data;
 }
 
-/** 今天/本周是否已生成过日报/周报（查复盘记录） */
-async function reportExists(period: "day" | "week"): Promise<boolean> {
+/** 到点调用自动日报/周报端点（幂等：已存在自动跳过） */
+async function ensureAutoReport(period: "day" | "week"): Promise<void> {
+  const label = period === "day" ? "日报" : "周报";
   try {
-    const reviews = await callData("getReviews");
-    if (!Array.isArray(reviews)) return false;
-    const since = new Date();
-    since.setHours(0, 0, 0, 0);
-    if (period === "week") since.setDate(since.getDate() - ((since.getDay() + 6) % 7));
-    const kw = period === "day" ? "日报" : "周报";
-    return reviews.some((r: any) => {
-      const t = String(r.title ?? "");
-      return t.includes(kw) && new Date(r.date ?? r.createdAt ?? 0).getTime() >= since.getTime();
-    });
-  } catch {
-    return false;
-  }
-}
-
-/** 调用日报/周报生成 API（AI 生成并存复盘） */
-async function generateReport(period: "day" | "week"): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE}/api/report?period=${period}`, {
+    const res = await fetch(`${BASE}/api/auto-report?period=${period}`, {
       headers: { "cache-control": "no-cache" },
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(120000),
     });
     const d = await res.json();
-    return !!d?.ok && !!d?.text;
-  } catch {
-    return false;
+    if (d?.created) console.log(`[scheduler] 自动${label} ✅ 已生成：${d.title}`);
+    else console.log(`[scheduler] 自动${label} ${d?.skipped ? "⏭ 当天已存在，跳过" : "⚠️ 失败"}`);
+  } catch (e) {
+    console.log(`[scheduler] 自动${label} 调用失败: ${String(e).slice(0, 120)}`);
   }
 }
 
@@ -92,20 +68,14 @@ async function tick() {
   const minute = now.getMinutes();
   const day = now.getDay(); // 0=周日
 
-  // 每日 21:00-21:05 窗口生成日报（当天未生成过）
-  if (hour === 21 && minute < 6) {
-    if (!(await reportExists("day"))) {
-      const ok = await generateReport("day");
-      console.log(`[scheduler] 自动日报: ${ok ? "✅ 已生成" : "⚠️ 失败或跳过"}`);
-    }
+  // 每日 20:00-20:05 窗口自动日报（幂等；窗口内失败可重试）
+  if (hour === 20 && minute < 6) {
+    await ensureAutoReport("day");
   }
 
-  // 每周日 21:00-21:05 生成周报
-  if (day === 0 && hour === 21 && minute < 6) {
-    if (!(await reportExists("week"))) {
-      const ok = await generateReport("week");
-      console.log(`[scheduler] 自动周报: ${ok ? "✅ 已生成" : "⚠️ 失败或跳过"}`);
-    }
+  // 每周日 20:00-20:05 自动周报（幂等）
+  if (day === 0 && hour === 20 && minute < 6) {
+    await ensureAutoReport("week");
   }
 
   // 每分钟检查到期提醒
@@ -119,9 +89,17 @@ export function register() {
   if (started) return;
   started = true;
   if (process.env.NEXT_RUNTIME !== "nodejs") return; // 仅 Node 运行时
-  console.log("[scheduler] 服务端定时任务已启动（日报 21:00 / 周报 周日 21:00 / 提醒每分钟）");
+  console.log("[scheduler] 服务端定时任务已启动（日报 20:00 / 周报 周日 20:00 / 提醒每分钟）");
   tick().catch(() => {});
   setInterval(() => {
     tick().catch(() => {});
   }, 60_000);
+
+  // 启动补跑：服务在 20:00 之后启动且当天还没生成 → 立即补生成（端点幂等，不会重复）
+  const h = new Date().getHours();
+  const dow = new Date().getDay();
+  if (h >= 20) {
+    ensureAutoReport("day").catch(() => {});
+    if (dow === 0) ensureAutoReport("week").catch(() => {});
+  }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getNotificationsForBell, markAllNotificationsRead, deleteNotification, clearAllNotifications } from "@/lib/api";
+import { getNotificationsForBell, deleteNotification, clearAllNotifications } from "@/lib/api";
 import type { BellNotification } from "@/lib/api";
 
 interface HeaderProps {
@@ -297,10 +297,6 @@ export function Header({ onMenuClick }: HeaderProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 setBellOpen((v) => !v);
-                if (!bellOpen) {
-                  // 打开面板 → 全部已读（持久化）
-                  markAllNotificationsRead().then(loadBell).catch(() => {});
-                }
               }}
             >
               <svg
@@ -314,8 +310,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <path d="M6 9.5a6 6 0 0 1 12 0c0 4.2 1.6 5.4 1.6 5.4H4.4S6 13.7 6 9.5z" />
                 <path d="M10.2 19a2 2 0 0 0 3.6 0" />
               </svg>
-              {(bellData?.unreadCount ?? 0) > 0 && (
-                <span className="bell-count">{bellData!.unreadCount > 9 ? "9+" : bellData!.unreadCount}</span>
+              {(bellData?.items?.length ?? 0) > 0 && (
+                <span className="bell-count">{bellData!.items!.length > 9 ? "9+" : bellData!.items!.length}</span>
               )}
             </button>
             <div
@@ -326,11 +322,10 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <div className="bell-pop-head">
                 <b>通知</b>
-                {(bellData?.unreadCount ?? 0) > 0 && <span className="badge warn">{bellData!.unreadCount} 未读</span>}
               </div>
               <ul>
                 {(bellData?.items ?? []).map((n) => (
-                  <li key={n.id} className={`bell-item${n.read ? " read" : ""}`}>
+                  <li key={n.id} className="bell-item">
                     <div className="bell-item-main">
                       <b>{n.title}</b>
                       {n.body && <span>{n.body}</span>}

@@ -1,0 +1,108 @@
+// 日报/周报生成共享逻辑（手动 /api/report 与自动 /api/auto-report 共用）
+import { prisma } from "@/lib/db";
+import * as db from "@/lib/db-actions";
+
+const API_URL = process.env.DEEPSEEK_API_URL ?? "https://api.deepseek.com";
+const API_KEY = process.env.DSH_DEEPSEEK_KEY;
+
+function dayStart(offsetDays = 0): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - offsetDays);
+  return d;
+}
+
+/** 聚合数据：近 N 天完成任务 / 笔记 / 复盘 / 学习 */
+async function collect(days: number) {
+  const since = new Date(Date.now() - days * 86400000);
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const [tasks, notes, reviews, learnings, projects, createdToday, carryover, dev, frictions] = await Promise.all([
+    prisma.task.findMany({
+      where: { status: "completed", completedAt: { gte: since } },
+      orderBy: { completedAt: "desc" },
+      take: 30,
+      select: { title: true, completedAt: true, project: { select: { name: true } } },
+    }),
+    prisma.note.findMany({ where: { createdAt: { gte: since } }, orderBy: { createdAt: "desc" }, take: 10, select: { title: true } }),
+    prisma.review.findMany({ where: { createdAt: { gte: since } }, orderBy: { createdAt: "desc" }, take: 10, select: { period: true, summary: true } }),
+    prisma.learningRecord.findMany({ where: { createdAt: { gte: since } }, orderBy: { createdAt: "desc" }, take: 10, select: { title: true } }),
+    prisma.project.findMany({ select: { name: true, status: true } }),
+    prisma.task.count({ where: { createdAt: { gte: dayStart } } }),
+    prisma.task.count({ where: { status: { not: "completed" }, createdAt: { lt: dayStart } } }),
+    db.getDevActivity(since),
+    prisma.frictionLog.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { content: true, task: { select: { title: true } } },
+    }),
+  ]);
+  return { tasks, notes, reviews, learnings, projects, createdToday, carryover, dev, frictions };
+}
+
+function buildPrompt(period: "day" | "week", data: Awaited<ReturnType<typeof collect>>): string {
+  const head =
+    period === "day"
+      ? `今天是 ${new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}，请生成今日工作日报`
+      : `请生成本周工作周报（近 7 天）`;
+  const taskLines = data.tasks.map((t) => `- ${t.title}${t.project?.name ? `（${t.project.name}）` : ""}`).join("\n") || "- 无";
+  const noteLines = data.notes.map((n) => `- ${n.title}`).join("\n") || "- 无";
+  const reviewLines = data.reviews.map((r) => `- ${r.period || "复盘"}：${(r.summary || "").slice(0, 50)}`).join("\n") || "- 无";
+  const learnLines = data.learnings.map((l) => `- ${l.title}`).join("\n") || "- 无";
+  const frictionLines = data.frictions.map((f) => `- ${f.content}${f.task?.title ? `（${f.task.title}）` : ""}`).join("\n") || "- 无";
+  const projLines = data.projects.map((p) => `${p.name}(${p.status})`).join("、") || "无";
+  const doneToday = data.tasks.length;
+  const planTotal = data.createdToday + data.carryover;
+  const planRate = planTotal > 0 ? Math.round((doneToday / planTotal) * 100) : 0;
+  const planLine = period === "day" ? `今日计划 ${data.createdToday} 项，昨日遗留 ${data.carryover} 项，已完成 ${doneToday} 项，计划完成率 ${planRate}%。` : `近 7 天共完成 ${doneToday} 项。`;
+  const dev = data.dev;
+  const devLine = dev && dev.updateCount > 0
+    ? `检测到 ${dev.updateCount} 处产物更新（${dev.updatedPaths.slice(0, 8).join("、")}${dev.updatedPaths.length > 8 ? " 等" : ""}）${dev.confirmedTasks.length > 0 ? `，${dev.confirmedTasks.length} 个任务确认完成（${dev.confirmedTasks.slice(0, 5).join("、")}）` : ""}${dev.projects.length > 0 ? `，涉及项目：${dev.projects.join("、")}` : ""}`
+    : "系统未检测到开发活动（可能是纯脑力/文档工作，或项目未关联文件夹）";
+  return `${head}。基于以下数据生成一份简洁的中文总结，结构：\n一、完成情况（列出主要完成事项，最多 8 条；若系统检测到开发进展，在对应事项中自然提及，如“完成登录接口（检测到 src/api/auth.ts 更新）”）\n二、产出与沉淀（笔记/学习/复盘要点，最多 5 条）\n三、状态与建议（2-3 句，结合进行中的项目给出下一步建议）\n要求：真实引用数据，不要编造；总字数 200 字以内；用 Markdown 但不要用标题符号 #。\n\n【${period === "day" ? "今日计划" : "本周"}】\n${planLine}\n\n【开发进度（系统检测）】\n${devLine}\n\n【已完成任务】\n${taskLines}\n\n【新增笔记】\n${noteLines}\n\n【复盘】\n${reviewLines}\n\n【学习记录】\n${learnLines}\n\n【摩擦/卡点（复盘参考，如有就分析原因与对策）】\n${frictionLines}\n\n【项目状态】\n${projLines}`;
+}
+
+/** 调用 DeepSeek 生成日报/周报文本；失败抛错 */
+export async function generateReportText(period: "day" | "week"): Promise<string> {
+  if (!API_KEY) throw new Error("服务端未配置 DSH_DEEPSEEK_KEY");
+  const days = period === "week" ? 7 : 1;
+  const data = await collect(days);
+  const prompt = buildPrompt(period, data);
+  const res = await fetch(`${API_URL}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${API_KEY}` },
+    body: JSON.stringify({
+      model: "deepseek-v4-flash",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 800,
+      temperature: 0.7,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("[lib/report] llm failed:", res.status, t.slice(0, 200));
+    throw new Error(`LLM 调用失败 ${res.status}`);
+  }
+  const json = await res.json();
+  return json?.choices?.[0]?.message?.content ?? "";
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** 自动生成唯一键：day:YYYY-MM-DD / week:YYYY-MM-DD（所在周周一） */
+export function autoKeyFor(period: "day" | "week"): string {
+  const d = new Date();
+  if (period === "day") return `day:${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return `week:${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+}
+
+/** 自动生成标题：AI 日报 8月26日 / AI 周报 8月第4周 */
+export function autoTitleFor(period: "day" | "week"): string {
+  const now = new Date();
+  return period === "day"
+    ? `AI 日报 ${now.getMonth() + 1}月${now.getDate()}日`
+    : `AI 周报 ${now.getMonth() + 1}月第${Math.ceil(now.getDate() / 7)}周`;
+}

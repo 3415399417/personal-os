@@ -59,15 +59,22 @@ async function fetchJson(url: string, timeoutMs = 12000): Promise<any> {
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   // GitHub token（可选）：配置后限流从 60 次/时提升到 5000 次/时，避免 403
   const token = process.env.GITHUB_TOKEN;
-  try {
-    const res = await fetch(url, {
+  const doFetch = (auth: boolean) =>
+    fetch(url, {
       headers: {
         "User-Agent": UA,
         Accept: "application/vnd.github+json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
       },
       signal: ctrl.signal,
     });
+  try {
+    let res = await doFetch(true);
+    // token 失效（401）→ 去掉 Authorization 重试一次（匿名限流 10 次/分，检测频率低足够）
+    if (res.status === 401 && token) {
+      console.warn("[github-data] GITHUB_TOKEN 返回 401，降级为匿名请求");
+      res = await doFetch(false);
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {

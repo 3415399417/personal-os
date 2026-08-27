@@ -81,7 +81,8 @@ model Notification {
 // ── GitHub 情报检测快照（对比上次拉取，发现新增写通知） ──
 model GithubCheck {
   id        String   @id @default("last")
-  hotIds    String   @default("[]") // 热门仓库 id JSON
+  hotIds    String   @default("[]") // 热门仓库 id JSON（按 star）
+  updatedIds String  @default("[]") // 最新更新/社区插件 id JSON（按 pushed_at，新发布可捕捉）
   newsIds   String   @default("[]") // 技术新闻 id JSON
   updatedAt DateTime @updatedAt
 }
@@ -187,6 +188,7 @@ model Review {
   problems     String   @default("")
   achievements String   @default("")
   nextPlan     String   @default("")
+  autoKey      String?  @unique // 自动生成唯一键（day:YYYY-MM-DD / week:YYYY-MM-DD周一），防重复生成
   createdAt    DateTime @default(now())
 }
 

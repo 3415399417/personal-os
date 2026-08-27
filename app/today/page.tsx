@@ -4,9 +4,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PageHead } from "@/components/common/PageHead";
-import { useGreeting } from "@/hooks/useGreeting";
 import { useCached } from "@/hooks/useCached";
-import { createTask, deleteTask, getCarryoverTasks, getDashboard, getPlanStats, getProjects, getTodayTasks, setProjectFocus, setTaskFocus, toggleTask } from "@/lib/api";
+import { createTask, deleteTask, getDashboard, getPlanStats, getProjects, getTodayTasks, setProjectFocus, setTaskFocus, toggleTask } from "@/lib/api";
 import type { DashboardData, Project, Task, TaskGroup } from "@/types";
 
 const GROUPS: { key: TaskGroup; label: string }[] = [
@@ -54,9 +53,6 @@ export default function TodayPage() {
   const [draft, setDraft] = useState("");
   const [dateLabel, setDateLabel] = useState("");
   const [focusData, setFocusData] = useState<DashboardData["focus"] | null>(null);
-  const [carryover, setCarryover] = useState<{ id: string; title: string; group: string; projectName: string }[]>([]);
-  const [hint, setHint] = useState("");
-  const [hintLoading, setHintLoading] = useState(false);
   // 缓存秒开：首次进入后数据进缓存，切回本页时直接显示旧数据再静默刷新
   const cachedTasks = useCached<Task[]>("today:tasks", () => getTodayTasks(), 20_000);
   const cachedProjects = useCached<Project[]>("today:projects", () => getProjects(), 60_000);
@@ -73,21 +69,11 @@ export default function TodayPage() {
     if (cachedFocus.data) setFocusData(cachedFocus.data);
   }, [cachedFocus.data]);
   const [planStats, setPlanStats] = useState<{ createdToday: number; doneToday: number; carryover: number; total: number; rate: number } | null>(null);
-  const greeting = useGreeting();
   const taskAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // 任务/项目/焦点由 useCached 自动加载（含缓存秒开），这里只加载剩余数据
-    getCarryoverTasks(3).then(setCarryover).catch(() => {});
     getPlanStats().then(setPlanStats).catch(() => {});
-    setHintLoading(true);
-    fetch("/api/start-hint")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.ok) setHint(d.hint);
-      })
-      .catch(() => {})
-      .finally(() => setHintLoading(false));
     const now = new Date();
     const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
     setDateLabel(`${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`);
@@ -157,85 +143,12 @@ export default function TodayPage() {
     }),
   ) as Record<TaskGroup, { total: number; done: number; percent: number }>;
 
-  const top3 =
-    tasks
-      .filter((t) => !t.done)
-      .sort((a, b) => {
-        const fa = a.isTodayFocus ? -1 : 0;
-        const fb = b.isTodayFocus ? -1 : 0;
-        if (fa !== fb) return fa - fb;
-        if (a.group === "must" && b.group !== "must") return -1;
-        if (b.group === "must" && a.group !== "must") return 1;
-        return 0;
-      })
-      .slice(0, 3);
-
   return (
     <AppShell>
       <div className="page">
       <PageHead title="今天" sub={dateLabel}>
         <span className="badge">待办 {tasks.filter((t) => !t.done).length} 项</span>
       </PageHead>
-
-      {/* 晨间启动卡片 */}
-      <section className="panel start-card" data-od-id="start-card">
-        <div className="start-head">
-          <div className="start-title">
-            <span className="start-greet">{greeting.title}</span>
-            <span className="start-date">{greeting.date} {greeting.week}</span>
-          </div>
-          <button className="btn btn-primary start-btn" onClick={() => taskAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-            开始今天
-            <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11" aria-hidden="true">
-              <path d="M7 4.5l12 7.5-12 7.5z" />
-            </svg>
-          </button>
-        </div>
-        <div className="start-grid">
-          <div className="start-col">
-            <div className="start-col-title">🎯 今日要事</div>
-            {top3.length === 0 ? (
-              <div className="start-empty">今天还没有任务，先添加一件最重要的事</div>
-            ) : (
-              <ul className="start-list">
-                {top3.map((t) => (
-                  <li key={t.id} className="start-item" onClick={() => toggle(t.id)}>
-                    <span className={`start-dot${t.isTodayFocus ? " focus" : ""}`} />
-                    <span className="start-item-text">{t.text}</span>
-                    {t.isTodayFocus && <span className="badge">焦点</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="start-col">
-            <div className="start-col-title">📌 昨日遗留</div>
-            {carryover.length === 0 ? (
-              <div className="start-empty">没有遗留任务，干净的开始 🎉</div>
-            ) : (
-              <ul className="start-list">
-                {carryover.map((c) => (
-                  <li key={c.id} className="start-item" onClick={() => toggle(c.id)}>
-                    <span className="start-dot carry" />
-                    <span className="start-item-text">{c.title}</span>
-                    {c.projectName && <span className="badge">{c.projectName}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="start-col start-col-hint">
-            <div className="start-col-title">💡 AI 提醒</div>
-            {hintLoading ? (
-              <div className="start-empty">正在思考今天的建议…</div>
-            ) : hint ? (
-              <div className="start-hint">“{hint}”</div>
-            ) : (
-              <div className="start-empty">今日无特别提醒</div>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* 今日总进度条 */}
       <section className="panel" data-od-id="today-total-progress" style={{ padding: "12px 14px" }} ref={taskAreaRef as any}>

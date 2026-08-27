@@ -154,6 +154,8 @@ export interface ConversationMessage {
   reasoning?: string;
   /** AI 执行数据库工具后的轻量提示（如 "✓ 已创建任务「xxx」"） */
   toolNote?: string;
+  /** RAG 第二大脑命中条数（assistant 消息可选） */
+  ragHits?: number;
 }
 
 export interface ExecEntry {

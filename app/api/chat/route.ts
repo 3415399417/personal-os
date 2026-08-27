@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import * as db from "@/lib/db-actions";
+import { buildRagContext } from "@/lib/rag";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -443,61 +444,6 @@ async function buildAssetContext(userText: string): Promise<string> {
   }
 }
 
-/* ── 第二大脑检索（RAG）：用户问题关键词命中 任务/笔记/复盘/资产 全库，注入上下文 ── */
-
-async function buildRagContext(userText: string): Promise<string> {
-  try {
-    const t = (userText ?? "").trim();
-    if (!t || t.length < 2) return "";
-    const words = [
-      ...new Set(
-        t.split(/[\s，。！？、,.!?;；:：'"“”‘’()（）\[\]【】<>《》/\\|_\-+=*#@~`^%&]+/).filter((w) => w.length >= 2),
-      ),
-    ];
-    if (words.length === 0) return "";
-
-    const [tasks, notes, reviews, assets] = await Promise.all([
-      prisma.task.findMany({ select: { id: true, title: true, status: true, completedAt: true } }),
-      prisma.note.findMany({ select: { id: true, title: true, content: true, createdAt: true } }),
-      prisma.review.findMany({ select: { id: true, title: true, summary: true, createdAt: true } }),
-      prisma.asset.findMany({ select: { id: true, title: true, type: true, content: true, updatedAt: true } }),
-    ]);
-
-    const fmtDate = (d: Date | null) => (d ? `${d.getMonth() + 1}月${d.getDate()}日` : "");
-    const matches: string[] = [];
-
-    for (const tk of tasks) {
-      if (words.some((w) => tk.title.includes(w))) {
-        matches.push(`【任务】${tk.title}（${tk.status === "completed" ? "已完成" + (tk.completedAt ? " " + fmtDate(tk.completedAt) : "") : "未完成"}）`);
-        if (matches.length >= 6) break;
-      }
-    }
-    for (const n of notes) {
-      if (matches.length >= 6) break;
-      if (words.some((w) => n.title.includes(w) || n.content.includes(w))) {
-        matches.push(`【笔记】${n.title}：${n.content.slice(0, 120)}`);
-      }
-    }
-    for (const r of reviews) {
-      if (matches.length >= 6) break;
-      if (words.some((w) => (r.title ?? "").includes(w) || r.summary.includes(w))) {
-        matches.push(`【复盘】${r.title ?? "复盘"}（${fmtDate(r.createdAt)}）：${r.summary.slice(0, 120)}`);
-      }
-    }
-    for (const a of assets) {
-      if (matches.length >= 6) break;
-      if (words.some((w) => a.title.includes(w) || a.content.includes(w))) {
-        matches.push(`【资产】${a.title}（${a.type}）：${a.content.slice(0, 120)}`);
-      }
-    }
-
-    if (matches.length === 0) return "";
-    return `【第二大脑检索（命中你的历史数据，回答时优先引用真实记录，不确定就说不确定）】\n${matches.join("\n")}`;
-  } catch {
-    return "";
-  }
-}
-
 /* ── 工具执行（直连 DB，不走 HTTP） ── */
 
 async function executeTool(name: string, args: any): Promise<{ result: unknown; notice?: string }> {
@@ -706,7 +652,8 @@ export async function POST(req: Request) {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const lastUserText = String(lastUser?.content ?? "");
   const assetCtx = await buildAssetContext(lastUserText);
-  const ragCtx = await buildRagContext(lastUserText);
+  const rag = await buildRagContext(lastUserText);
+  const ragCtx = rag.prompt;
   const systemPrompt = `${BASE_SYSTEM}\n\n${pageCtx}\n${senseCtx}\n${assetCtx}\n${ragCtx}`;
 
   const toolResults: { name: string; notice?: string }[] = [];
@@ -841,6 +788,7 @@ export async function POST(req: Request) {
       model: finalModel,
       usage: finalUsage,
       toolResults: toolResults.filter((t) => t.notice),
+      rag: { hitCount: rag.hitCount },
     });
   } catch (err) {
     console.error("[api/chat] failed:", err);

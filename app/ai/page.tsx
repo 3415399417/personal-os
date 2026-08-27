@@ -77,6 +77,7 @@ export default function AiPage() {
         text: data.content || "（模型未返回内容，请重试）",
         time: nowTime(),
         reasoning: data.reasoning || undefined,
+        ragHits: typeof data.rag?.hitCount === "number" ? data.rag.hitCount : undefined,
       };
       // 工具执行提示：单独字段展示（小字），不重复拼进正文；持久化时含提示
       const tools: { name?: string; notice?: string }[] = data.toolResults ?? [];
@@ -200,6 +201,11 @@ export default function AiPage() {
                   <div className="chat-bubble" style={{ whiteSpace: "pre-line" }}>
                     {m.text}
                   </div>
+                  {typeof m.ragHits === "number" && m.ragHits > 0 && (
+                    <div style={{ marginTop: 4, fontSize: 10.5, color: "var(--muted)" }}>
+                      🔍 已检索 {m.ragHits} 条本地资料（第二大脑）
+                    </div>
+                  )}
                   {m.reasoning && (
                     <details
                       style={{
